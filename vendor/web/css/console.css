@@ -1,0 +1,194 @@
+/* ==========================================================================================
+   The command console (Admin panel): the full conversation, operations, files, team, schedule
+   and sessions, styled as Jarvis's own console. Loaded after app.css and overrides its admin
+   look; the markup (ids and classes the code and tests use) is unchanged.
+
+   Colours come from theme.css: the console takes the present AI's colour like the stage does.
+   Motion: only on hover/focus and a few slow ambient layers (transform/opacity), all off in the
+   lite tier and with reduced motion. No backdrop-filter (it costs the GPU what voice needs).
+   ========================================================================================== */
+
+.app {
+  --bg: var(--void); --panel: color-mix(in srgb, var(--ai-deep) 82%, #000); --panel2: color-mix(in srgb, var(--ai) 7%, #060b10);
+  --line: color-mix(in srgb, var(--ai) 22%, #0c1620); --text: #e3edf5; --muted: #8aa0b3; --radius: 10px;
+  --cx-edge: color-mix(in srgb, var(--ai) 38%, transparent);
+  position: relative; isolation: isolate; background: var(--void); color: var(--text); color-scheme: dark;
+  grid-template-columns: minmax(0, 1fr);   /* never wider than the screen, whatever the header holds */
+  font-family: var(--font);
+}
+
+/* ---- ambient layers ---------------------------------------------------------------------- */
+.cx-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.cx-grid { position: absolute; inset: 0; opacity: .1;
+  background: linear-gradient(var(--cx-edge) 1px, transparent 1px) 0 0 / 56px 56px, linear-gradient(90deg, var(--cx-edge) 1px, transparent 1px) 0 0 / 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000, transparent 75%); mask-image: radial-gradient(ellipse at 50% 0%, #000, transparent 75%); }
+.cx-glow { position: absolute; left: 50%; top: -30vh; width: 120vw; height: 70vh; transform: translateX(-50%);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ai) 16%, transparent), transparent); }
+.cx-scan { position: absolute; left: 0; right: 0; top: -20%; height: 18%; will-change: transform;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--ai) 5%, transparent), transparent);
+  animation: cx-scan 14s linear infinite; }
+@keyframes cx-scan { to { transform: translateY(700%); } }
+
+/* ---- header ------------------------------------------------------------------------------ */
+.app .top { position: relative; gap: 14px; padding: 10px 18px; border: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--ai-deep) 92%, #000), color-mix(in srgb, var(--ai-deep) 60%, transparent)); }
+.app .top::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ai) 20%, var(--ai-2) 50%, var(--ai) 80%, transparent); opacity: .6; }
+.app .brand { gap: 12px; }
+.cx-mark { position: relative; width: 30px; height: 30px; flex: none; }
+.cx-mark i { position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--ai); }
+.cx-mark i:nth-child(2) { inset: 6px; border-style: dashed; border-width: 1px; opacity: .8; animation: cx-spin 9s linear infinite; }
+.cx-mark i:nth-child(3) { inset: 11px; border: 0; background: var(--ai-2); box-shadow: 0 0 10px var(--ai), 0 0 22px var(--ai-glow); animation: cx-core 2.6s ease-in-out infinite; }
+@keyframes cx-spin { to { transform: rotate(360deg); } }
+@keyframes cx-core { 50% { transform: scale(.72); opacity: .75; } }
+.cx-title { display: grid; line-height: 1.1; }
+.cx-title strong { font: 700 .82rem var(--mono); letter-spacing: .32em; text-transform: uppercase; color: var(--ai-ink); }
+.cx-title small { font: .62rem var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--ai-2); opacity: .75; }
+.app .conn { padding: 4px 10px; border-radius: 99px; font: .66rem var(--mono); letter-spacing: .16em; text-transform: uppercase; box-shadow: inset 0 0 0 1px var(--line); }
+.app .chip { font: .7rem var(--mono); letter-spacing: .08em; background: transparent; border-color: var(--line); color: var(--ai-2); }
+
+/* buttons: light-edged glass */
+.app .btn { border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--ai) 6%, transparent); color: var(--text);
+  font: 600 .74rem var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: 8px 13px; transition: border-color .15s, background .15s, color .15s; }
+.app .btn:hover, .app .btn:focus-visible { border-color: var(--ai); color: var(--ai-ink); background: color-mix(in srgb, var(--ai) 14%, transparent); outline: none; }
+.app .btn.primary { background: var(--ai); color: #02090e; border-color: transparent; box-shadow: 0 0 18px var(--ai-glow); }
+.app .btn.primary:hover { background: var(--ai-2); }
+.app .btn.danger { color: #ff9aa5; border-color: color-mix(in srgb, var(--hot) 45%, transparent); background: color-mix(in srgb, var(--hot) 6%, transparent); }
+.app .btn.danger:hover { background: color-mix(in srgb, var(--hot) 16%, transparent); border-color: var(--hot); color: #fff; }
+.app .btn.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.app .btn.call { border-color: color-mix(in srgb, var(--ok) 50%, transparent); color: #9ff3cf; }
+.app .btn.call.on { background: var(--hot); color: #fff; border-color: transparent; box-shadow: 0 0 18px color-mix(in srgb, var(--hot) 45%, transparent); }
+.app .icon { border-radius: 8px; border-color: var(--line); background: color-mix(in srgb, var(--ai) 6%, transparent); color: var(--ai-2); }
+
+/* ---- layout: a centred reading column + the operations column ---------------------------- */
+.app .layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); }
+.app .chat { background: transparent; }
+.app .scroller { padding: 22px max(18px, calc((100% - 880px) / 2)) 10px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.app .day { font: .66rem var(--mono); letter-spacing: .26em; color: var(--ai-2); opacity: .75; }
+.app .day::before, .app .day::after { background: linear-gradient(90deg, transparent, var(--line)); }
+.app .day::after { background: linear-gradient(90deg, var(--line), transparent); }
+
+/* messages */
+.app .msg { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; margin: 16px 0; }
+.app .avatar { width: 36px; height: 36px; border-radius: 10px; color: var(--c, var(--you)); background: color-mix(in srgb, var(--c, var(--you)) 12%, #05090d);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--you)) 60%, transparent), 0 0 14px color-mix(in srgb, var(--c, var(--you)) 22%, transparent);
+  font: 700 .8rem var(--mono); clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); border-radius: 0; }
+.app .who { font: .66rem var(--mono); letter-spacing: .16em; text-transform: uppercase; margin-bottom: 3px; }
+.app .who b { color: var(--c, var(--text)); letter-spacing: .2em; }
+.app .msg.assistant > div:last-child, .app .msg.agent > div:last-child { position: relative; padding: 9px 14px 10px; border-radius: 4px 12px 12px 12px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c, var(--ai)) 7%, #070c12), color-mix(in srgb, var(--c, var(--ai)) 3%, #04070b));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--ai)) 20%, transparent); }
+.app .msg.assistant > div:last-child::before, .app .msg.agent > div:last-child::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px; border-radius: 2px;
+  background: linear-gradient(180deg, var(--c, var(--ai)), transparent); box-shadow: 0 0 8px var(--c, var(--ai)); }
+.app .body { line-height: 1.58; font-size: .95rem; }
+.app .body a { color: var(--ai-2); }
+.app .body code { background: color-mix(in srgb, var(--ai) 10%, #05090d); color: var(--ai-ink); }
+.app .body pre code, .app .code code { background: none; padding: 0; color: inherit; }
+.app .msg.greeting .body { font-size: 1.02rem; color: var(--ai-ink); }
+
+/* the owner's own lines: on the right, in their colour */
+.app .msg.user { grid-template-columns: minmax(0, 1fr) 36px; }
+.app .msg.user > .avatar { order: 2; }
+.app .msg.user > div:last-child { justify-self: end; text-align: right; max-width: min(78%, 720px); }
+.app .msg.user .who { justify-content: flex-end; }
+.app .msg.user .body { text-align: left; background: color-mix(in srgb, var(--you) 9%, #070b10); border: 0; border-radius: 12px 4px 12px 12px; padding: 8px 14px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--you) 28%, transparent); }
+.app .msg .actions { top: 4px; right: 8px; }
+.app .msg.user .actions { right: auto; left: 0; }
+.app .mini { font: .62rem var(--mono); letter-spacing: .1em; text-transform: uppercase; border-color: var(--line); color: var(--muted); background: #04080c; }
+.app .mini:hover { color: var(--ai-ink); border-color: var(--ai); }
+.app .tool { font: .64rem var(--mono); letter-spacing: .06em; border-color: var(--line); background: color-mix(in srgb, var(--ai) 4%, transparent); }
+.app .meta { font: .62rem var(--mono); letter-spacing: .08em; }
+.app .typing::after { color: var(--ai); }
+
+/* code */
+.app .code { border-color: var(--line); background: #03070b; border-radius: 8px; }
+.app .code-bar { background: color-mix(in srgb, var(--ai) 8%, #04080c); font: .64rem var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.app .code pre { color: #d5e5f2; }
+
+/* task cards: operations in flight */
+.app .card { position: relative; overflow: hidden; margin-left: 48px; border: 0; border-radius: 10px; padding: 10px 14px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--c, var(--ai)) 10%, #060a0f), #05090d 70%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--ai)) 28%, transparent), inset 3px 0 0 var(--c, var(--ai)); }
+.app .card:has(.pill.running)::after { content: ""; position: absolute; inset: 0; pointer-events: none; will-change: transform;
+  background: linear-gradient(100deg, transparent 35%, color-mix(in srgb, var(--c, var(--ai)) 12%, transparent) 50%, transparent 65%);
+  transform: translateX(-100%); animation: cx-sweep 2.8s ease-in-out infinite; }
+@keyframes cx-sweep { to { transform: translateX(100%); } }
+.app .card .row1 { font: .78rem var(--mono); letter-spacing: .04em; }
+.app .card .title { font-family: var(--font); font-size: .9rem; letter-spacing: 0; }
+.app .pill { font: .6rem var(--mono); letter-spacing: .14em; text-transform: uppercase; border-color: currentColor; }
+.app .cmd .line { color: var(--ai-2); font-family: var(--mono); }
+.app .cmd pre { background: #03070b; border-color: var(--line); }
+.app .note { font: .7rem var(--mono); letter-spacing: .06em; color: var(--muted); }
+.app .jump { border-color: var(--ai); background: var(--panel); color: var(--ai-2); font: .66rem var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+
+/* ---- the command bar ------------------------------------------------------------------------ */
+.app .composer { position: relative; border: 0; background: transparent; padding: 8px max(18px, calc((100% - 880px) / 2)) calc(14px + var(--safe-b)); }
+.app .composer .row { gap: 10px; padding: 6px; border-radius: 14px; background: color-mix(in srgb, var(--ai-deep) 88%, #000);
+  box-shadow: inset 0 0 0 1px var(--line), 0 10px 40px rgba(0, 0, 0, .45); transition: box-shadow .2s; }
+.app .composer .row:focus-within { box-shadow: inset 0 0 0 1px var(--ai), 0 0 0 4px var(--ai-soft), 0 10px 40px rgba(0, 0, 0, .45); }
+.app .composer textarea { border: 0; background: transparent; padding: 9px 6px; font-size: .95rem; }
+.app .composer textarea:focus { outline: none; }
+.app .composer textarea::placeholder { color: color-mix(in srgb, var(--ai-2) 55%, var(--muted)); font-family: var(--mono); font-size: .8rem; letter-spacing: .06em; }
+.app .hints { margin: 0 max(18px, calc((100% - 880px) / 2)) 6px; background: var(--panel); border-color: var(--line); }
+.app .hints code { color: var(--ai-2); }
+.app .hints button:hover, .app .hints button.sel { background: color-mix(in srgb, var(--ai) 10%, transparent); }
+
+/* the call strip */
+.app .callbar { margin: 0 max(18px, calc((100% - 880px) / 2)); border: 0; border-radius: 12px; background: color-mix(in srgb, var(--ai) 7%, #05090d);
+  box-shadow: inset 0 0 0 1px var(--line); }
+.app .callstate { font: 600 .72rem var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--ai-2); }
+.app .orb { background: radial-gradient(circle at 40% 35%, #fff, var(--ai) 35%, color-mix(in srgb, var(--ai) 30%, #000)); box-shadow: 0 0 0 3px var(--ai-soft), 0 0 22px var(--ai-glow); }
+.app .orb[data-state="listening"] { background: radial-gradient(circle at 40% 35%, #fff, var(--ai-2) 35%, color-mix(in srgb, var(--ai) 30%, #000)); }
+.app .orb[data-state="thinking"] { background: conic-gradient(from 0deg, var(--ai), var(--ai-2), var(--ai-deep), var(--ai)); }
+
+/* ---- the operations column ------------------------------------------------------------------ */
+.app .side { position: relative; border: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--ai-deep) 70%, #000), #03060a); }
+.app .side::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: linear-gradient(180deg, transparent, var(--ai) 30%, var(--ai) 70%, transparent); opacity: .45; }
+.app .tabs { gap: 4px; padding: 10px 10px 0; border: 0; }
+.app .tabs button { flex: 1 1 auto; padding: 8px 4px; border: 0; border-radius: 8px 8px 0 0; font: 600 .6rem var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+  border-bottom: 2px solid transparent; transition: color .15s, background .15s; }
+.app .tabs button:hover { color: var(--ai-ink); }
+.app .tabs button[aria-selected="true"] { color: var(--ai-ink); background: color-mix(in srgb, var(--ai) 10%, transparent); border-bottom-color: var(--ai); }
+.app .badge { background: var(--ai); color: #02090e; font: 700 .58rem var(--mono); }
+.app .panel { padding: 14px; gap: 10px; }
+.app .panel h3 { font: 600 .6rem var(--mono); letter-spacing: .3em; color: var(--ai-2); display: flex; align-items: center; gap: 10px; }
+.app .panel h3::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+.app .item { border: 0; border-radius: 9px; padding: 9px 12px; background: color-mix(in srgb, var(--c, var(--ai)) 6%, #05090d);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--ai)) 22%, transparent), inset 3px 0 0 var(--c, var(--line)); transition: transform .15s; }
+.app .item:hover { transform: translateX(2px); }
+.app .item.attention { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 55%, transparent), inset 3px 0 0 var(--warn), 0 0 18px color-mix(in srgb, var(--warn) 14%, transparent); }
+.app .empty { font: .72rem var(--mono); letter-spacing: .08em; color: var(--muted); }
+
+.app .item.brief .t { display: flex; gap: 8px; align-items: baseline; }
+.app .item.brief .bk-kind { margin: 0; flex: none; color: var(--c); }
+
+/* ---- modal + toast (shared with the stage) ---------------------------------------------------- */
+.modal { background: rgba(0, 2, 5, .72); }
+.modal-card { background: color-mix(in srgb, var(--ai-deep) 90%, #000); border: 0; box-shadow: inset 0 0 0 1px var(--cx-edge, var(--ai-line)), 0 30px 80px rgba(0, 0, 0, .6); }
+.modal-bar { border-color: var(--ai-line); font: .72rem var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.toast { background: color-mix(in srgb, var(--ai-deep) 92%, #000); border-color: var(--ai-line); color: var(--ai-ink); font: .76rem var(--mono); letter-spacing: .04em;
+  box-shadow: 0 0 24px var(--ai-soft); }
+
+/* ---- phones ----------------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .app .layout { grid-template-columns: 1fr; }
+  .app .tabbar { background: color-mix(in srgb, var(--ai-deep) 92%, #000); border-top: 1px solid var(--line); }
+  .app .tabbar { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(66px, 1fr); overflow-x: auto; scrollbar-width: none; }
+  body[data-view="briefings"] .app .side, body[data-view="schedule"] .app .side { display: grid; border: 0; }
+  body[data-view="briefings"] .app .chat, body[data-view="schedule"] .app .chat { display: none; }
+  .app .tabbar button { font: 600 .6rem var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+  .app .tabbar button[aria-current="page"] { color: var(--ai-2); }
+  .cx-title small { display: none; }
+  .app .top { gap: 8px; padding: 8px 10px; overflow: hidden; }
+  .app .top .btn { padding: 7px 9px; letter-spacing: .06em; font-size: .66rem; }
+  .app #spend, .cx-title { display: none; }
+  .app #to-stage { white-space: nowrap; }
+  .app .msg.user > div:last-child { max-width: 88%; }
+  .app .card { margin-left: 0; }
+}
+
+/* ---- quality tiers + reduced motion ----------------------------------------------------------- */
+html[data-fx="lite"] .cx-scan, html[data-fx="lite"] .app .card::after { display: none; }
+html[data-fx="lite"] .cx-mark i { animation: none; }
+body:not([data-mode="admin"]) .cx-bg { display: none; }
+@media (prefers-reduced-motion: reduce) { .cx-scan, .app .card::after { display: none; } .cx-mark i { animation: none; } }

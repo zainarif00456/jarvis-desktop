@@ -1,0 +1,26 @@
+# Adaptations to the vendored Jarvis web front-end
+
+**`vendor/web/` is a byte-for-byte copy of `project-jarvis/clients/web` (72 files, hashes in `vendor/manifest.json`).
+No vendored file has been edited.** Every adaptation for a non-browser origin lives outside it. `node scripts/check-drift.js`
+proves this (it fails if any vendored file differs from the manifest or from the Jarvis source).
+
+| # | File | What it does | Why it is needed |
+|---|------|--------------|------------------|
+| 1 | `src/main/gateway.js` | Serves `vendor/web` on `http://127.0.0.1:<random port>` with the same CSP and security headers the server sends (`app.py:96`). The window loads that origin. | The UI uses only relative URLs and `location.host`; loading it from the gateway keeps all 12k lines working with zero edits. `file://` or `app://` would break relative `/api` and `/ws` calls. |
+| 2 | `src/main/gateway.js` (`prep`) | For `/api`, `/health`, `/ws` it forwards to the Base URL, **injects `Cookie: jarvis_device=<token>`** from the keychain, **removes `Origin`/`Referer`**, sets `Host` to the server's, adds `ngrok-skip-browser-warning: 1` and a desktop User-Agent. | The server reads auth only from that cookie (`app.py:283`, `:992`) and rejects any `Origin` that differs from `Host` (`_same_origin`, `app.py:240`). A page on the loopback origin would otherwise get 403/4403. A missing `Origin` is explicitly accepted by the server as "non-browser client". **No server change.** |
+| 3 | `src/main/gateway.js` (`proxyRes`) | Captures `Set-Cookie: jarvis_device` from `/api/pair`, stores it via `safeStorage`, and strips the header before it reaches the page. | The cookie is HttpOnly and the loopback origin is not the server's, so the page could never hold it. The token never enters the renderer. The unmodified pairing card in the web UI works. |
+| 4 | `src/main/gateway.js` (`pairBodyRewrite`) | Changes the pairing body's `name` from `"Browser"` to `"Jarvis Desktop (<hostname>)"` when the web card sends the default. | So the server's device list shows the desktop app, not "Browser". Same route, same JSON shape. |
+| 5 | `src/main/gateway.js` | Requires a per-launch secret header (`x-jd-gateway`) and `Host == 127.0.0.1:<port>`; the header is added only by the app's own session (`session.webRequest.onBeforeSendHeaders`). | Other local programs, or a web page doing DNS rebinding, must not be able to use the token through the proxy (plan risk 7). |
+| 6 | `src/preload/app.js` | Preload on the Jarvis page: reads `#s-mute` (`aria-pressed`, `disabled`), clicks it for the global hotkey / tray, and draws a thin "server unreachable / version differs" bar. | Desktop-only features without editing web code. Mute stays purely client-side, exactly as in the web UI (the button handler `setMuted`). |
+| 7 | `src/main/main.js` (permission handlers) | Grants `media`, `notifications`, `fullscreen`, clipboard only to the gateway origin; denies everything else. | Electron has no per-site prompt; getUserMedia, `Notification` and the Fullscreen API that the web code uses need an explicit grant. |
+| 8 | `src/main/main.js` (window) | `backgroundThrottling: false`; `window.open` of same-origin URLs opens an app window, other `http(s)` URLs open in the default browser; navigation away from the app origin is blocked. | A call must keep running when the window is hidden to the tray; external links (`exec/web.js` uses `window.open`) must not replace the app. |
+| 9 | `src/ui/*`, `src/main/server-probe.js`, `src/main/store.js` | First-run / settings page (Base URL, test connection, pairing by code, hotkey, always on top, close-to-tray, start on login) and an unreachable state, health polling every 5 s. | The plan's connection shell. These are separate pages (`file://`, own CSP), not injected into the web UI. |
+| 10 | `src/main/main.js` (`GlobalShortcutsPortal` switch) | On Wayland only: enable Chromium's xdg-desktop-portal global shortcut support. | Plain global shortcuts do not work on Wayland. Not verified (this laptop is X11). |
+
+## Overlay (no change to the web code)
+The client page now lives in a `WebContentsView` so it can be shown in a transparent overlay window (`src/main/overlay.js`, `src/main/overlay.css`, `docs/OVERLAY.md`). Injected CSS hides the stage furniture while floating; the preload only reads the page (deck active, portal rectangles). Browser Fullscreen is denied while floating. `src/preload/overlay-page.js` (+ `src/main/arrange.js`) is run inside the page by the preload: a janitor for stuck cards / stale pointer frame, and the per-display layout while floating; it reads and positions DOM elements only (inline styles, restored on leaving). `overlay.css` also shows rail pictures whole (`object-fit: contain`).
+
+## Not adapted (deliberately)
+- `localStorage` keys (`jarvis.*`) live in the app's own Electron profile, keyed by the loopback origin. The gateway reuses its last port (saved as `gatewayPort`) so the origin, and therefore portal positions, fx tier and volume, persist between launches. If that port is taken at launch a new one is chosen and those settings start fresh once.
+- `navigator.locks`, MediaSource, AudioWorklet, WebGL, Fullscreen: Chromium implements them; used as-is.
+- No `exec_action` open/reveal changes: they run on the server machine (fine for localhost).

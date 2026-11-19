@@ -1,0 +1,18 @@
+/* Injected by the desktop shell (webContents.insertCSS) into the Jarvis page. Rules under html[data-jd-overlay] apply ONLY while the page
+   floats above other apps; the others fix things in the main window too. */
+
+/* Pictures in the file rail are shown whole (the web client crops them to fill the card, which cut the pairing-code picture to a few letters). */
+.holo-face img, .holo-face video { object-fit: contain !important; background: rgba(0, 6, 12, .55); }
+
+html[data-jd-overlay], html[data-jd-overlay] body { background: transparent !important; }
+/* Only the floating windows: no orb, no voice stage, no sidebar / team panels, no console, no file rail, no tray chips, no drag frame, no card links. */
+html[data-jd-overlay] #stage,
+html[data-jd-overlay] #app,
+html[data-jd-overlay] #drop,
+html[data-jd-overlay] #hw-tray,
+html[data-jd-overlay] .ws-ghost,
+html[data-jd-overlay] .xl-links,
+html[data-jd-overlay] .pt-reticle,
+html[data-jd-overlay] .perf-hud { display: none !important; }
+/* Panels glide to their place when the layout changes (a new card never makes the others jump). */
+html[data-jd-overlay] .xc, html[data-jd-overlay] .hw { transition-property: left, top, width, height, border-color, box-shadow; transition-duration: .3s; transition-timing-function: ease; }

@@ -1,0 +1,175 @@
+/* ==========================================================================================
+   Hologram portals: every window on the deck (files, pictures, cameras, schedule, reports).
+   A translucent plate with feathered edges, light lines that fade at the ends, electric arcs that
+   run along the active portal, corner nodes, and holographic round controls.
+
+   Performance rules (voice must never break up, see .claude/session-handoff/24 and 35):
+   * motion is transform / opacity only (compositor), never layout, filters or box-shadow;
+   * textures are static images (img/arc*.svg) that are moved, never repainted;
+   * only the ACTIVE portal runs its arcs and sweep; the others are still;
+   * <html data-fx="lite"> (perf governor, js/perf.js) or reduced motion turn the effects off.
+   ========================================================================================== */
+
+.hw-layer { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+.hw {
+  position: absolute; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
+  max-width: 100vw; pointer-events: auto; color: var(--ink); color-scheme: dark; isolation: isolate;
+  border-radius: 10px; background: none; border: 0; contain: layout style; transform-origin: 50% 50%;
+}
+.hw.minimised { display: none; }
+.hw.dragging { user-select: none; }
+
+/* the glass: dense enough to read on, edges dissolve into the room like a projection */
+.hw-plate { position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background:
+    radial-gradient(130% 80% at 50% -10%, color-mix(in srgb, var(--ai) 16%, transparent), transparent 60%),
+    linear-gradient(170deg, color-mix(in srgb, color-mix(in srgb, var(--ai) 19%, var(--void)) 90%, transparent), color-mix(in srgb, color-mix(in srgb, var(--ai) 8%, var(--void)) 94%, transparent));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent), linear-gradient(180deg, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent), linear-gradient(180deg, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+  mask-composite: intersect; }
+/* faint holographic grain + interference lines (static) */
+.hw-plate::after { content: ""; position: absolute; inset: 0; border-radius: inherit; opacity: .55;
+  background: repeating-linear-gradient(180deg, transparent 0 2px, color-mix(in srgb, var(--ai) 4.5%, transparent) 2px 3px); }
+
+/* the light: hairlines that are brightest in the middle and fade out at the corners */
+.hw-edge { position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; opacity: .55; transition: opacity .3s;
+  background:
+    linear-gradient(90deg, transparent 2%, var(--hud-2) 30% 70%, transparent 98%) top / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent 2%, var(--hud) 30% 70%, transparent 98%) bottom / 100% 1px no-repeat,
+    linear-gradient(180deg, transparent 4%, var(--hud) 30% 70%, transparent 96%) left / 1px 100% no-repeat,
+    linear-gradient(180deg, transparent 4%, var(--hud) 30% 70%, transparent 96%) right / 1px 100% no-repeat; }
+.hw.active .hw-edge { opacity: 1; }
+
+/* the halo: a soft static glow around the portal; it only fades and flickers (opacity) */
+.hw-aura { position: absolute; inset: -14px; z-index: -2; border-radius: 22px; pointer-events: none; opacity: .35; transition: opacity .35s;
+  box-shadow: 0 0 46px 8px color-mix(in srgb, var(--ai) 20%, transparent), inset 0 0 26px color-mix(in srgb, var(--ai) 14%, transparent), 0 26px 70px rgba(0, 0, 0, .55); }
+.hw.active .hw-aura { opacity: .9; animation: hw-flicker 9s steps(1, end) infinite; }
+@keyframes hw-flicker { 0%, 100% { opacity: .9; } 61% { opacity: .55; } 61.6% { opacity: .95; } 62.4% { opacity: .65; } 63% { opacity: .9; } 88% { opacity: .8; } }
+
+/* electric arcs along the edges of the active portal: a static texture slid sideways */
+.hw-arc { position: absolute; z-index: 2; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity .4s; contain: strict; }
+.hw-arc > i { position: absolute; display: block; will-change: transform; }
+.hw-arc.t, .hw-arc.b { left: 7%; right: 7%; height: 16px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); }
+.hw-arc.t { top: -8px; } .hw-arc.b { bottom: -8px; }
+.hw-arc.l, .hw-arc.r { top: 9%; bottom: 9%; width: 16px;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 20%, #000 80%, transparent); mask-image: linear-gradient(180deg, transparent, #000 20%, #000 80%, transparent); }
+.hw-arc.l { left: -8px; } .hw-arc.r { right: -8px; }
+.hw-arc.t > i, .hw-arc.b > i { left: 0; top: 0; height: 16px; width: calc(100% + 480px); background: url(/img/arc.svg) repeat-x 0 0 / 480px 16px; }
+.hw-arc.l > i, .hw-arc.r > i { left: 0; top: 0; width: 16px; height: calc(100% + 480px); background: url(/img/arc-v.svg) repeat-y 0 0 / 16px 480px; }
+.hw.active .hw-arc { opacity: .75; animation: hw-arc-flick 3.1s steps(1, end) infinite; }
+.hw.active .hw-arc.b { animation-duration: 3.7s; animation-delay: -1.2s; } .hw.active .hw-arc.l { animation-duration: 4.3s; animation-delay: -.6s; } .hw.active .hw-arc.r { animation-duration: 2.9s; animation-delay: -2s; }
+.hw.active .hw-arc.t > i { animation: hw-run-x 1.9s linear infinite; } .hw.active .hw-arc.b > i { animation: hw-run-x 2.6s linear infinite reverse; }
+.hw.active .hw-arc.l > i { animation: hw-run-y 2.3s linear infinite; } .hw.active .hw-arc.r > i { animation: hw-run-y 2.1s linear infinite reverse; }
+@keyframes hw-run-x { to { transform: translateX(-480px); } } @keyframes hw-run-y { to { transform: translateY(-480px); } }
+@keyframes hw-arc-flick { 0%, 100% { opacity: .75; } 17% { opacity: .25; } 18% { opacity: .9; } 46% { opacity: .5; } 47% { opacity: .85; } 73% { opacity: .15; } 74.5% { opacity: .8; } }
+
+/* corner nodes */
+.hw-node { position: absolute; z-index: 3; width: 7px; height: 7px; border-radius: 50%; pointer-events: none; background: var(--ai-ink);
+  box-shadow: 0 0 6px 2px color-mix(in srgb, var(--ai) 75%, transparent), 0 0 18px 4px color-mix(in srgb, var(--ai) 30%, transparent); opacity: .45; transition: opacity .3s; }
+.hw-node.tl { left: -3px; top: -3px; } .hw-node.tr { right: -3px; top: -3px; } .hw-node.bl { left: -3px; bottom: -3px; } .hw-node.br { right: -3px; bottom: -3px; }
+.hw.active .hw-node { opacity: 1; animation: hw-node 2.6s ease-in-out infinite; } .hw.active .hw-node.tr, .hw.active .hw-node.bl { animation-delay: -1.3s; }
+@keyframes hw-node { 50% { transform: scale(.55); opacity: .55; } }
+
+/* a slow scan sweep through the active portal */
+.hw-sweep { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; border-radius: inherit; contain: strict; }
+.hw-sweep > i { position: absolute; left: 0; right: 0; top: -30%; height: 30%; opacity: 0; will-change: transform;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--ai-2) 7%, transparent) 70%, color-mix(in srgb, var(--ai-ink) 16%, transparent) 98%, transparent); }
+.hw.active .hw-sweep > i { opacity: 1; animation: hw-sweep 7.5s cubic-bezier(.45, .05, .55, .95) infinite; }
+@keyframes hw-sweep { 0% { transform: translateY(0); } 70%, 100% { transform: translateY(440%); } }
+
+/* title bar: no box, just light */
+.hw-bar { position: relative; z-index: 4; display: flex; align-items: center; gap: 9px; min-width: 0; padding: 10px 132px 8px 16px;
+  cursor: grab; touch-action: none; user-select: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ai) 35%, transparent) 20%, color-mix(in srgb, var(--ai) 35%, transparent) 80%, transparent) bottom / 100% 1px no-repeat; }
+.hw.dragging .hw-bar { cursor: grabbing; }
+.hw-led { width: 7px; height: 7px; border-radius: 50%; background: var(--hud); box-shadow: 0 0 10px var(--hud); flex: none; }
+.hw.active .hw-led { animation: hud-blink 2.4s ease-in-out infinite; }
+.hw-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 600 .74rem var(--mono); letter-spacing: .24em; text-transform: uppercase; color: var(--ai-ink);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--ai) 80%, transparent), -1px 0 rgba(255, 77, 94, .25), 1px 0 color-mix(in srgb, var(--ai-2) 25%, transparent); }
+.hw-tags { display: flex; gap: 6px; flex: none; }
+.hw-tag { font: .58rem var(--mono); letter-spacing: .16em; padding: 1px 7px; border-radius: 99px; color: var(--hud-2);
+  background: color-mix(in srgb, var(--ai) 8%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ai) 35%, transparent); }
+.hw .spacer { flex: 1; }
+.hw-body { position: relative; z-index: 3; min-height: 0; min-width: 0; overflow: hidden; border-radius: 0 0 10px 10px; }
+
+/* holographic controls: three light rings floating on the top edge */
+.hw-ctl { position: absolute; z-index: 6; top: -15px; right: 18px; display: flex; gap: 10px; transition: opacity .3s, transform .3s; }
+.hb { position: relative; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  color: var(--ai-ink); background: radial-gradient(circle at 50% 40%, color-mix(in srgb, color-mix(in srgb, var(--ai) 40%, var(--void)) 95%, transparent), color-mix(in srgb, color-mix(in srgb, var(--ai) 9%, var(--void)) 96%, transparent) 70%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ai-2) 50%, transparent), 0 0 12px color-mix(in srgb, var(--ai) 35%, transparent); transition: transform .18s ease, color .18s; }
+.hb::before { content: ""; position: absolute; inset: -5px; border-radius: 50%; pointer-events: none; opacity: .45; transition: opacity .2s;
+  background: conic-gradient(from 0deg, transparent 0 18%, var(--hud-2) 22%, transparent 30% 52%, var(--hud) 58%, transparent 66% 100%);
+  -webkit-mask: radial-gradient(circle, transparent 13.5px, #000 14px, #000 15px, transparent 15.5px); mask: radial-gradient(circle, transparent 13.5px, #000 14px, #000 15px, transparent 15.5px); }
+.hb svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ai-2) 90%, transparent)); }
+.hb:hover, .hb:focus-visible { transform: scale(1.12); color: #fff; outline: none; }
+.hb:hover::before, .hb:focus-visible::before { opacity: 1; animation: hb-spin 1.6s linear infinite; }
+@keyframes hb-spin { to { transform: rotate(360deg); } }
+.hb.close { color: #ffb3bd; box-shadow: 0 0 0 1px rgba(255, 107, 125, .6), 0 0 12px rgba(255, 77, 94, .35); }
+.hb.close::before { background: conic-gradient(from 0deg, transparent 0 18%, #ff8a98 22%, transparent 30% 52%, var(--hot) 58%, transparent 66% 100%); }
+.hb.close svg { filter: drop-shadow(0 0 3px rgba(255, 107, 125, .9)); }
+.hb:active { transform: scale(.94); }
+
+.hw-grip { position: absolute; right: 4px; bottom: 4px; width: 18px; height: 18px; cursor: nwse-resize; z-index: 6; touch-action: none; opacity: .6;
+  background: linear-gradient(135deg, transparent 55%, var(--hud) 55% 62%, transparent 62% 72%, var(--hud) 72% 79%, transparent 79%); }
+
+/* opening: a line of light that opens into the portal; closing: it folds back into the line */
+.hw.opening { animation: hw-in .6s cubic-bezier(.2, .85, .25, 1) both; }
+.hw.closing { animation: hw-out .32s cubic-bezier(.5, 0, .75, .3) both; pointer-events: none; }
+@keyframes hw-in { 0% { opacity: 0; transform: scale(.06, .006); } 30% { opacity: 1; transform: scale(1, .012); } 62% { transform: scale(1, 1.02); } 100% { opacity: 1; transform: none; } }
+@keyframes hw-out { 0% { opacity: 1; transform: none; } 55% { opacity: 1; transform: scale(1, .012); } 100% { opacity: 0; transform: scale(.04, .006); } }
+
+/* Jarvis points at a portal ("this one"): three pulses of the halo */
+.hw.flag .hw-aura { animation: hw-flag .7s ease-in-out 3; }
+.hw.flag .hw-edge { opacity: 1; }
+@keyframes hw-flag { 50% { opacity: 1; transform: scale(1.025); } }
+
+/* full screen / maximised: the portal becomes the room */
+.hw.max, .hw:fullscreen { position: fixed; inset: 0 !important; width: auto !important; height: auto !important; border-radius: 0; z-index: 95 !important; }
+.hw:fullscreen, .hw.max { background: #01060b; }
+.hw.is-full .hw-plate { -webkit-mask-image: none; mask-image: none; border-radius: 0; }
+.hw.is-full .hw-aura, .hw.is-full .hw-arc, .hw.is-full .hw-node, .hw.is-full .hw-grip { display: none; }
+.hw.is-full .hw-body { border-radius: 0; }
+.hw.is-full .hw-ctl { top: 18px; right: 22px; gap: 14px; }
+.hw.is-full .hb { width: 40px; height: 40px; } .hw.is-full .hb svg { width: 17px; height: 17px; }
+.hw.is-full .hb::before { -webkit-mask: radial-gradient(circle, transparent 18.5px, #000 19px, #000 20px, transparent 20.5px); mask: radial-gradient(circle, transparent 18.5px, #000 19px, #000 20px, transparent 20.5px); }
+.hw.is-full .hw-bar { padding-right: 190px; }
+.hw.is-full.idle .hw-ctl, .hw.is-full.idle .hw-bar { opacity: 0; } .hw.is-full.idle { cursor: none; }
+.hw.is-full .hw-bar { transition: opacity .3s; }
+
+/* phones: a sheet from the bottom */
+.hw.sheet { left: 0 !important; right: 0 !important; width: auto !important; top: 10vh !important; height: auto !important; bottom: 0 !important; border-radius: 16px 16px 0 0; }
+.hw.sheet .hw-grip, .hw.sheet .hw-arc.b, .hw.sheet .hw-node.bl, .hw.sheet .hw-node.br { display: none; } .hw.sheet .hw-bar { cursor: default; }
+.hw.sheet .hw-ctl { top: -15px; right: 14px; }
+
+/* minimised portals: light chips in the tray */
+.hw-tray { position: fixed; left: 76px; bottom: 14px; z-index: 31; display: flex; gap: 8px; }
+.hw-chip { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border: 0; border-radius: 99px; color: var(--hud-2);
+  background: color-mix(in srgb, color-mix(in srgb, var(--ai) 14%, var(--void)) 90%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ai) 45%, transparent), 0 0 14px color-mix(in srgb, var(--ai) 25%, transparent);
+  font: .68rem var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+.hw-chip:hover { box-shadow: inset 0 0 0 1px var(--hud), 0 0 20px color-mix(in srgb, var(--ai) 45%, transparent); }
+
+/* pictures inside a portal fade at their edges too (not in full screen) */
+.hw:not(.is-full) .fv-img:not(.zoomed) {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent), linear-gradient(180deg, transparent, #000 3%, #000 97%, transparent);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent), linear-gradient(180deg, transparent, #000 3%, #000 97%, transparent); mask-composite: intersect; }
+
+/* a zoom Jarvis makes glides (a hand-made one follows the wheel at once) */
+.fv-img.glide { transition: transform .6s cubic-bezier(.2, .8, .2, 1); }
+
+/* zoom target box ("zoom into the top left"): brackets that frame the area being looked at */
+.fv-focus { position: absolute; z-index: 4; pointer-events: none; border-radius: 4px; opacity: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ai-2) 90%, transparent), 0 0 18px color-mix(in srgb, var(--ai) 55%, transparent); }
+.fv-focus.on { animation: fv-focus 1.6s ease-out both; }
+@keyframes fv-focus { 0% { opacity: 0; transform: scale(1.15); } 20% { opacity: 1; transform: none; } 75% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---- quality tiers (js/perf.js) and reduced motion -------------------------------------- */
+html[data-fx="lite"] .hw-arc, html[data-fx="lite"] .hw-sweep, html[data-fx="lite"] .hw-plate::after { display: none; }
+html[data-fx="lite"] .hw.active .hw-aura, html[data-fx="lite"] .hw.active .hw-node, html[data-fx="lite"] .hw.active .hw-led { animation: none; }
+html[data-fx="standard"] .hw-arc.l, html[data-fx="standard"] .hw-arc.r, html[data-fx="standard"] .hw-sweep { display: none; }
+body[data-mode="admin"] .hw * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .hw.opening, .hw.closing, .hw.active .hw-arc, .hw.active .hw-arc > i, .hw.active .hw-aura, .hw.active .hw-node, .hw.active .hw-sweep > i, .hb:hover::before, .hw.flag .hw-aura { animation: none !important; }
+  .hw-sweep { display: none; }
+}

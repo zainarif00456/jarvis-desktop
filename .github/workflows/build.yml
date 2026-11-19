@@ -1,0 +1,55 @@
+name: build
+on:
+  workflow_dispatch:
+  push: { tags: ['v*'] }
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm test
+  linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx electron-builder --linux AppImage deb --x64
+      - uses: actions/upload-artifact@v4
+        with: { name: jarvis-desktop-linux, path: "dist/*.AppImage\ndist/*.deb" }
+  mac:
+    # Universal (Intel + Apple Silicon) ad-hoc signed dmg + zip. Not notarized: first open = right-click > Open.
+    needs: test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --mac dmg zip --universal
+      - name: Verify ad-hoc signature
+        run: |
+          APP=$(ls -d dist/mac-universal/*.app | head -1)
+          codesign --verify --deep --strict "$APP"
+          codesign -dv "$APP" 2>&1 | tee sig.txt
+          lipo -archs "$APP/Contents/MacOS/Jarvis Desktop"
+      - uses: actions/upload-artifact@v4
+        with: { name: jarvis-desktop-mac, path: "dist/*.dmg\ndist/*.zip" }
+  windows:
+    # Low priority: configured, never run by the author.
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx electron-builder --win nsis --x64
+      - uses: actions/upload-artifact@v4
+        with: { name: jarvis-desktop-windows, path: "dist/*.exe" }

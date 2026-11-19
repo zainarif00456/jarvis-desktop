@@ -1,0 +1,57 @@
+/* ==========================================================================================
+   The workspace (js/workspace/): panels forming from the core, the drag ghost, the docked stage.
+   Same rules as holo.css: transform/opacity only; lite tier and reduced motion use plain cuts.
+   ========================================================================================== */
+
+/* forming: everything starts hidden; js/workspace/forming.js animates each part in turn */
+.hw.forming > .hw-plate, .hw.forming > .hw-edge, .hw.forming > .hw-node, .hw.forming > .hw-aura,
+.hw.forming > .hw-bar, .hw.forming > .hw-ctl, .hw.forming > .hw-body, .hw.forming > .hw-grip,
+.hw.forming > .hw-arc { opacity: 0; }
+.hw.forming > .hw-arc { animation: none !important; }
+.hw-form-scan { position: absolute; left: -2%; right: -2%; top: 0; height: 2px; z-index: 7; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--ai-2) 18%, #fff 50%, var(--ai-2) 82%, transparent);
+  box-shadow: 0 0 14px 2px var(--ai-glow); will-change: transform; }
+
+/* the drag ghost: where a panel will land (snap zone or the panel it will swap with) */
+.ws-ghost { position: fixed; left: 0; top: 0; z-index: 29; pointer-events: none; border-radius: 12px;
+  background: color-mix(in srgb, var(--ai) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ai) 55%, transparent), 0 0 40px var(--ai-soft);
+  transition: transform .16s cubic-bezier(.2, .8, .2, 1), width .16s, height .16s; }
+.ws-ghost[data-kind="swap"] { background: color-mix(in srgb, var(--mark) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mark) 60%, transparent); }
+.ws-ghost .wg { position: absolute; width: 18px; height: 18px; border: 0 solid var(--ai-2); }
+.ws-ghost .wg.tl { left: -1px; top: -1px; border-left-width: 2px; border-top-width: 2px; }
+.ws-ghost .wg.tr { right: -1px; top: -1px; border-right-width: 2px; border-top-width: 2px; }
+.ws-ghost .wg.bl { left: -1px; bottom: -1px; border-left-width: 2px; border-bottom-width: 2px; }
+.ws-ghost .wg.br { right: -1px; bottom: -1px; border-right-width: 2px; border-bottom-width: 2px; }
+
+/* docked: the core is up top; the big rings follow it, the state label sits under it, the
+   file carousel steps aside (panels show files now) */
+.hud-rings { transition: transform .9s cubic-bezier(.2, .8, .2, 1), opacity .6s; }
+body[data-docked="1"] .hud-rings { transform: translate(-50%, calc(-50% - 31vh)) scale(.36); opacity: .7; }
+/* the state label sits just under the docked core (core centre 13.5vh, radius ~7.2vh: js/workspace/dock.js) */
+body[data-docked="1"] .stage-mid { position: absolute; top: calc(13.5vh + min(7.2vh, 8.4vw) + 14px); left: 0; right: 0; padding: 0; align-self: auto;
+  animation: ws-label-in .6s ease both; }
+body[data-docked="1"] .s-state { font-size: .72rem; letter-spacing: .34em; }
+body[data-docked="1"] .stage-mid .s-hint { display: none; }
+@keyframes ws-label-in { from { opacity: 0; transform: translateY(-6px); } }
+body[data-docked="1"] #holo { opacity: 0; pointer-events: none; }
+#holo { transition: opacity .4s; }
+
+html[data-fx="lite"] .hud-rings, html[data-fx="lite"] .ws-ghost { transition: none; }
+html[data-fx="lite"] body[data-docked="1"] .stage-mid { animation: none; }
+@media (prefers-reduced-motion: reduce) { .hud-rings, .ws-ghost { transition: none; } body[data-docked="1"] .stage-mid { animation: none; } }
+
+/* documents in the file viewer: a column of server-drawn pages (js/viewer.js documentNode) */
+.fv-doc { width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; padding: 18px 8%; display: grid; gap: 22px; align-content: start;
+  scrollbar-width: thin; scrollbar-color: var(--ai-line) transparent; overscroll-behavior: contain; touch-action: pan-y; }
+.fv-doc-status { color: var(--ai-2); font: .72rem var(--mono); letter-spacing: .2em; text-transform: uppercase; text-align: center; padding: 40px 0; }
+.fv-pg { content-visibility: auto; contain-intrinsic-size: auto 920px; margin: 0; display: grid; gap: 6px; justify-items: center; }
+.fv-page { width: 100%; max-width: 980px; aspect-ratio: 1 / 1.414; background: color-mix(in srgb, var(--ai) 6%, #0a0f14); border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--ai-line), 0 18px 40px rgba(0, 0, 0, .45); opacity: .25; transition: opacity .35s; }
+.fv-page.in { aspect-ratio: auto; height: auto; background: #fff; opacity: 1; }
+.fv-pg figcaption { font: .62rem var(--mono); letter-spacing: .18em; color: var(--ai-2); opacity: .7; }
+
+/* ?perf=1 readout (js/core/perfhud.js) */
+.perf-hud { position: fixed; right: 10px; bottom: 10px; z-index: 200; margin: 0; padding: 8px 10px; pointer-events: none; border-radius: 6px;
+  font: .64rem/1.45 var(--mono); color: var(--ai-ink); background: rgba(0, 4, 8, .82); box-shadow: inset 0 0 0 1px var(--ai-line); white-space: pre; }

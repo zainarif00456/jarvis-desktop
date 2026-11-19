@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+<title>Jarvis Desktop: Settings</title>
+<link rel="stylesheet" href="settings.css">
+</head><body>
+<main>
+  <header><div class="orb"></div><div><h1>Jarvis Desktop</h1><p id="sub">Connect to your Jarvis server</p></div></header>
+  <div id="banner" class="banner" hidden></div>
+
+  <section>
+    <h2>1. Server address</h2>
+    <p class="hint">Where <code>jarvis serve</code> is running. Default is this computer.</p>
+    <div class="row"><input id="base" type="text" spellcheck="false" autocomplete="off" placeholder="http://localhost:8000">
+      <button id="test" type="button">Test connection</button></div>
+    <div id="test-out" class="out"></div>
+  </section>
+
+  <section>
+    <h2>2. Pair this device</h2>
+    <p class="hint">On the server run <code>jarvis pair</code> and type the 8-character code here. The device token is kept in your system keychain, never shown or sent anywhere else.</p>
+    <div class="row"><input id="code" type="text" maxlength="16" spellcheck="false" autocomplete="off" placeholder="ABCD2345">
+      <input id="devname" type="text" maxlength="40" placeholder="Device name">
+      <button id="pair" type="button">Pair</button></div>
+    <div id="pair-out" class="out"></div>
+    <div class="row"><span id="tokstate" class="pill"></span><button id="forget" type="button" class="ghost">Forget this device</button></div>
+  </section>
+
+  <section>
+    <h2>Audio</h2>
+    <p class="hint">Bluetooth earbuds work well for listening, but using their microphone forces them into a call mode that can be silent on some computers. By default Jarvis listens through a non-Bluetooth microphone and speaks through the system default output. Changes apply to a running call within a second.</p>
+    <label class="row"><span>Microphone</span><select id="audioInput"></select></label>
+    <label class="row"><span>Speaker</span><select id="audioOutput"></select></label>
+    <div class="row"><button id="audio-laptop" type="button">Use laptop speakers and mic</button><button id="audio-reset" type="button" class="ghost">Automatic</button><button id="audio-refresh" type="button" class="ghost">Refresh list</button></div>
+    <div id="audio-out" class="out"></div>
+  </section>
+
+  <section>
+    <h2>Desktop</h2>
+    <label class="row"><span>Mute / unmute hotkey</span><input id="hotkey" type="text" readonly placeholder="click, then press keys"><button id="hk-clear" type="button" class="ghost">Clear</button></label>
+    <div id="hk-out" class="out"></div>
+    <label class="check"><input id="overlay" type="checkbox"> Hologram overlay: show portals and live work panels over other apps while this window is minimised, hidden or behind them</label>
+    <label class="row"><span>Hide / show overlay hotkey</span><input id="overlayHotkey" type="text" readonly placeholder="click, then press keys"><button id="ohk-clear" type="button" class="ghost">Clear</button></label>
+    <div id="ohk-out" class="out"></div>
+    <label class="check"><input id="alwaysOnTop" type="checkbox"> Keep window always on top</label>
+    <label class="check"><input id="closeToTray" type="checkbox"> Closing the window hides it to the tray (a call keeps running)</label>
+    <label class="check"><input id="startOnLogin" type="checkbox"> Start Jarvis Desktop when I log in</label>
+    <label class="check"><input id="notifications" type="checkbox"> Notify me when the hotkey mutes or unmutes while Jarvis is in the background</label>
+  </section>
+
+  <div class="actions"><button id="save" type="button" class="primary">Save and open Jarvis</button><span id="save-out" class="out"></span></div>
+  <footer id="about"></footer>
+</main>
+<script src="settings.js"></script>
+</body></html>

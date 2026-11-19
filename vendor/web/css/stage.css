@@ -1,0 +1,34 @@
+/* ==========================================================================================
+   Stage chrome: the pairing screen and the voice dock, in the same light-edged glass as the
+   portals and the console. Colours follow the present AI (theme.css).
+   Performance: no backdrop-filter here. The dock sits over the core's canvas, which redraws
+   every frame; a blur behind it would be recomputed every frame too.
+   ========================================================================================== */
+
+/* ---- pairing ------------------------------------------------------------------------------ */
+.pair { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--ai) 14%, transparent), transparent 60%), var(--void); }
+.pair::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .12;
+  background: linear-gradient(var(--ai-line) 1px, transparent 1px) 0 0 / 56px 56px, linear-gradient(90deg, var(--ai-line) 1px, transparent 1px) 0 0 / 56px 56px;
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, #000, transparent 70%); mask-image: radial-gradient(circle at 50% 40%, #000, transparent 70%); }
+.pair-card { position: relative; border: 0; border-radius: 14px; padding: 30px 26px; gap: 14px;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--ai) 9%, #050a10), #03070b);
+  box-shadow: inset 0 0 0 1px var(--ai-line), 0 0 60px var(--ai-soft), 0 30px 80px rgba(0, 0, 0, .55); }
+.pair-card h1 { font: 700 1.05rem var(--mono); letter-spacing: .5em; text-transform: uppercase; color: var(--ai-ink); text-shadow: 0 0 18px var(--ai-glow); }
+.pair-card p { font-size: .86rem; }
+.pair-card p code { color: var(--ai-2); }
+.pair-card .logo { justify-self: center; width: 46px; height: 46px; border-width: 2px; border-color: var(--ai); box-shadow: 0 0 22px var(--ai-glow); }
+.pair-card .logo::after { inset: 13px; background: var(--ai-2); box-shadow: 0 0 14px var(--ai); }
+.pair-card input { border: 0; background: #02060a; box-shadow: inset 0 0 0 1px var(--ai-line); font-family: var(--mono); color: var(--ai-ink); }
+.pair-card input:focus { outline: none; box-shadow: inset 0 0 0 1px var(--ai), 0 0 0 4px var(--ai-soft); }
+.pair-card button { font: 700 .78rem var(--mono); letter-spacing: .3em; text-transform: uppercase; background: var(--ai); box-shadow: 0 0 20px var(--ai-glow); }
+
+/* ---- the voice dock ---------------------------------------------------------------------- */
+.stage .round { backdrop-filter: none; border: 0; background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--ai) 16%, #08111a), #03080d 72%);
+  box-shadow: inset 0 0 0 1px var(--ai-line), 0 0 18px var(--ai-soft); color: var(--ai-ink); transition: transform .18s, box-shadow .18s; }
+.stage .round:hover:not(:disabled), .stage .round:focus-visible { transform: translateY(-2px); outline: none; box-shadow: inset 0 0 0 1px var(--ai), 0 0 26px var(--ai-glow); }
+.stage .round .lbl { font-family: var(--mono); letter-spacing: .14em; color: var(--ai-2); }
+.stage .round:disabled { opacity: .45; }
+.stage .round[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--mark), 0 0 20px color-mix(in srgb, var(--mark) 30%, transparent); color: var(--mark); }
+.stage .round.big { color: #fff; background: radial-gradient(circle at 50% 35%, #ff6b78, #b3192a 75%); box-shadow: 0 0 0 1px rgba(255, 140, 150, .5), 0 0 26px rgba(255, 77, 94, .45); }
+.stage .round.big.resume { background: radial-gradient(circle at 50% 35%, var(--ai-2), color-mix(in srgb, var(--ai) 70%, #000) 75%); box-shadow: 0 0 0 1px var(--ai-2), 0 0 26px var(--ai-glow); color: #02090e; }
+.stage .round.big .lbl { color: inherit; }

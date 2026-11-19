@@ -1,0 +1,48 @@
+/* ==========================================================================================
+   Theme: who is present colours the whole application.
+
+   `html[data-ai]` (set by js/core/presence.js) picks the AI in front: Jarvis by default, Friday,
+   EDITH or Veronica while she is talking or presenting. Every accent in the app is drawn from:
+     --ai        the present AI's colour (lines, glows, active states)
+     --ai-2      a lighter tint of it (highlighted text, bright edges)
+     --ai-ink    near-white text tinted by it
+     --ai-deep   a very dark tint (glass plates, backgrounds)
+     --mark      a colour that stands out against --ai (targets, marked spots, warnings in reports)
+   Fixed identity colours (--jarvis, --friday, --edith, --veronica, --you) never change: they label
+   who did something. Status colours (--ok, --warn, --bad) never change either.
+
+   The four theme colours are registered properties, so the browser blends them smoothly when the
+   AI changes. In the lite quality tier (js/perf.js) or with reduced motion they switch at once.
+   Keep these values in step with js/core/personas.js.
+   ========================================================================================== */
+
+@property --ai { syntax: '<color>'; inherits: true; initial-value: #4cc9f0; }
+@property --ai-2 { syntax: '<color>'; inherits: true; initial-value: #9be8ff; }
+@property --ai-ink { syntax: '<color>'; inherits: true; initial-value: #e3f8ff; }
+@property --ai-deep { syntax: '<color>'; inherits: true; initial-value: #03121c; }
+@property --mark { syntax: '<color>'; inherits: true; initial-value: #ffb347; }
+
+:root {
+  /* identity (fixed) */
+  --jarvis: #4cc9f0; --friday: #f59e0b; --edith: #3ee0a1; --veronica: #c084fc; --you: #94a3b8;
+  /* status (fixed) */
+  --ok: #34d399; --warn: #f59e0b; --bad: #f87171; --hot: #ff4d5e;
+  /* type */
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  /* the present AI (Jarvis until presence says otherwise) */
+  --ai: #4cc9f0; --ai-2: #9be8ff; --ai-ink: #e3f8ff; --ai-deep: #03121c; --mark: #ffb347;
+  /* derived: always follow the present AI */
+  --ai-line: color-mix(in srgb, var(--ai) 42%, transparent);
+  --ai-soft: color-mix(in srgb, var(--ai) 14%, transparent);
+  --ai-glow: color-mix(in srgb, var(--ai) 35%, transparent);
+  --glass: color-mix(in srgb, var(--ai-deep) 78%, transparent);
+  --void: #010509;
+  transition: --ai .8s ease, --ai-2 .8s ease, --ai-ink .8s ease, --ai-deep .8s ease, --mark .8s ease;
+}
+html[data-ai="friday"] { --ai: #f59e0b; --ai-2: #ffd27a; --ai-ink: #fff3dc; --ai-deep: #1a0f02; --mark: #7be0ff; }
+html[data-ai="edith"] { --ai: #3ee0a1; --ai-2: #a6f7d6; --ai-ink: #e2fff2; --ai-deep: #02160f; --mark: #ffb347; }
+html[data-ai="veronica"] { --ai: #c084fc; --ai-2: #e6c8ff; --ai-ink: #f6ebff; --ai-deep: #12061c; --mark: #ffd166; }
+
+html[data-fx="lite"] { transition: none; }
+@media (prefers-reduced-motion: reduce) { :root { transition: none; } }

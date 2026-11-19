@@ -1,0 +1,55 @@
+/* The agent selector: who answers the call. Static glass (no backdrop blur over the live core), the
+   colours are the fixed identity colours so each chip is always itself, whoever is in front. */
+
+.agent-dock { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; border: 1px solid var(--ai-line, var(--line));
+  background: color-mix(in srgb, var(--ai-deep, #03121c) 82%, transparent); }
+.agent-dock[hidden] { display: none; }
+.ad-chip { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 9px; border-radius: 999px;
+  font: .66rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted, #8aa0ad); cursor: pointer; position: relative;
+  transition: color .2s ease, background-color .2s ease, box-shadow .2s ease; }
+.ad-chip:focus-visible { outline: 2px solid var(--c); outline-offset: 1px; }
+.ad-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); opacity: .45; flex: none; transition: opacity .2s ease, transform .2s ease; }
+.ad-chip:hover { color: var(--c); }
+.ad-chip:hover .ad-dot { opacity: .9; }
+.ad-chip.warm .ad-dot { opacity: .8; }                       /* benched but already running: switching is instant */
+.ad-chip.on { color: #fff; background: color-mix(in srgb, var(--c) 24%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px color-mix(in srgb, var(--c) 35%, transparent); }
+.ad-chip.on .ad-dot { opacity: 1; transform: scale(1.25); }
+.ad-chip.off { opacity: .38; cursor: not-allowed; }
+.ad-chip.off:hover { color: var(--muted, #8aa0ad); }
+.ad-chip.pending .ad-dot { animation: ad-wait .9s ease-in-out infinite; }
+@keyframes ad-wait { 50% { opacity: .15; transform: scale(.6); } }
+html[data-fx="lite"] .ad-chip, html[data-fx="lite"] .ad-dot { transition: none; }
+html[data-fx="lite"] .ad-chip.pending .ad-dot { animation: none; opacity: .5; }
+@media (prefers-reduced-motion: reduce) { .ad-chip, .ad-dot { transition: none; } .ad-chip.pending .ad-dot { animation: none; opacity: .5; } }
+
+#agent-dock-stage { display: flex; align-items: center; margin-left: 4px; }
+#agent-dock-console { display: flex; align-items: center; margin-left: 10px; }
+.app .agent-dock .ad-chip { padding: 4px 10px 4px 8px; }
+
+/* narrow screens: the dots alone (the active one keeps its name) */
+@media (max-width: 720px) {
+  .ad-chip { padding: 6px 8px; }
+  .ad-chip:not(.on) .ad-name { display: none; }
+}
+
+/* the message box and the call button name whoever is answering */
+body[data-holder="friday"] #call, body[data-holder="veronica"] #call, body[data-holder="edith"] #call { border-color: var(--ai-line); }
+
+/* ---- settings: brains and the skill hub ---------------------------------------------------- */
+.brain-status { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.brain-status .chip { font-size: .72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.brain-status .chip.ok { border-color: var(--ok); color: var(--ok); }
+.brain-status .chip.warn { border-color: var(--warn); color: var(--warn); }
+.brain-status .chip.bad { border-color: var(--bad); color: var(--bad); }
+.agent-row .hint { grid-column: 1 / -1; margin: 0; font-size: .72rem; color: var(--muted); }
+.brain-fixed { display: flex; gap: 8px; align-items: baseline; font-size: .76rem; color: var(--muted); padding: 2px 8px; }
+.brain-fixed strong { color: var(--text); min-width: 5.5em; } .brain-fixed .ok { color: var(--ok); } .brain-fixed .bad { color: var(--bad); }
+.skill-install { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin: 6px 0; }
+.skill-install input { min-width: 0; padding: 7px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+.skill-rows { display: grid; gap: 4px; max-height: 220px; overflow-y: auto; overscroll-behavior: contain; }
+.skill-row { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 8px; align-items: center; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); font-size: .76rem; }
+.skill-row.off { opacity: .55; }
+.skill-row .sk-on { display: flex; flex-direction: row; gap: 6px; align-items: center; } .skill-row .sk-on strong { font-size: .78rem; color: var(--text); }
+.skill-row .sk-always { display: flex; flex-direction: row; gap: 4px; align-items: center; font-size: .7rem; }
+.skill-row .sk-src { grid-column: 1 / -1; color: var(--muted); font-size: .68rem; }
+.skill-row .bad { color: var(--bad); }

@@ -1,0 +1,30 @@
+{
+  "name": "jarvis-desktop",
+  "productName": "Jarvis Desktop",
+  "version": "0.1.0",
+  "description": "Desktop client for the Jarvis server: the Jarvis web UI in Electron behind a loopback gateway.",
+  "author": "Zain <zainarif00456@gmail.com>",
+  "homepage": "https://localhost",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main/main.js",
+  "desktopName": "jarvis-desktop.desktop",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dev:fake": "node scripts/fake-server.js 8765",
+    "dev:overlay": "node scripts/dev-overlay.js",
+    "sync-web": "scripts/sync-web.sh",
+    "icons": "node scripts/make-icons.js",
+    "dist:linux": "electron-builder --linux AppImage deb --x64",
+    "dist:mac": "electron-builder --mac dmg zip --universal",
+    "dist:win": "electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "http-proxy": "^1.18.1"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  }
+}

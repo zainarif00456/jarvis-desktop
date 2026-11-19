@@ -1,0 +1,61 @@
+appId: com.zain.jarvis-desktop
+productName: Jarvis Desktop
+copyright: Personal use
+directories:
+  output: dist
+  buildResources: build
+asar: true
+files:
+  - package.json
+  - src/**/*
+  - build/icon.png
+  - build/tray.png
+extraResources:
+  - { from: vendor/web, to: web }
+  - { from: vendor/manifest.json, to: manifest.json }
+publish: null                      # no auto-update, no publishing
+
+linux:
+  target:
+    - { target: AppImage, arch: [x64] }
+    - { target: deb, arch: [x64] }
+  category: Utility
+  syncDesktopName: true
+  icon: build/icon.png
+  maintainer: Zain <zainarif00456@gmail.com>
+  synopsis: Jarvis desktop client
+  desktop:
+    entry:
+      StartupWMClass: jarvis-desktop
+      Comment: Desktop client for your Jarvis server
+      Keywords: Jarvis;assistant;voice;
+deb:
+  depends: [libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0]
+  packageCategory: utils
+artifactName: jarvis-desktop-${version}-${os}-${arch}.${ext}
+
+mac:
+  target:
+    - { target: dmg, arch: [universal] }
+    - { target: zip, arch: [universal] }
+  category: public.app-category.productivity
+  icon: build/icon.png
+  identity: "-"                    # ad-hoc signature only (no Apple Developer account)
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: Jarvis Desktop needs the microphone so you can talk to Jarvis.
+    NSCameraUsageDescription: Jarvis Desktop may use the camera when a Jarvis feature asks for it.
+dmg:
+  title: Jarvis Desktop ${version}
+
+win:
+  target:
+    - { target: nsis, arch: [x64] }
+  icon: build/icon.png
+  signAndEditExecutable: false     # unsigned: Windows SmartScreen warns once
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
