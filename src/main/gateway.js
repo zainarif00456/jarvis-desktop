@@ -23,7 +23,8 @@ const SECRET_HEADER = 'x-jd-gateway';
 function createGateway(o) {
   const log = o.log || (() => {});
   const secret = crypto.randomBytes(24).toString('hex');
-  const proxy = httpProxy.createProxyServer({ changeOrigin: false, xfwd: false, ws: true, secure: true });
+  // changeOrigin: the TLS SNI is taken from the Host header at request creation; without it https targets (Tailscale/ngrok) get SNI 127.0.0.1 and fail with EPROTO.
+  const proxy = httpProxy.createProxyServer({ changeOrigin: true, xfwd: false, ws: true, secure: true });
   let port = 0;
   const hostOk = (h) => h === `127.0.0.1:${port}`;
 
