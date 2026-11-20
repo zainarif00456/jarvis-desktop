@@ -62,7 +62,7 @@ function createGateway(o) {
     log('gateway proxy error', err.code || err.message, req.url);
     if (res && typeof res.writeHead === 'function' && !res.headersSent) {
       res.writeHead(502, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ detail: 'Jarvis server unreachable', code: err.code || 'ERR' }));
+      res.end(JSON.stringify({ detail: `Jarvis server unreachable at ${o.getTarget()} (${err.code || 'error'}). Open Settings (Ctrl/Cmd+,) to check or change the server address.`, code: err.code || 'ERR' }));
     } else if (res && res.destroy) res.destroy();
   });
 

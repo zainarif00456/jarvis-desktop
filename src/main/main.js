@@ -252,7 +252,11 @@ ipcMain.handle('settings:pair', async (e, { baseUrl, code, name }) => {
   if (!fromSettings(e)) return { ok: false, error: 'forbidden' };
   let base; try { base = normalizeBaseUrl(baseUrl); } catch (e) { return { ok: false, error: e.message }; }
   const r = await pair(base, code, name || `Jarvis Desktop (${os.hostname()})`);
-  if (r.ok) { store.setToken(r.token, base); log('paired with', base); return { ok: true }; }
+  if (r.ok) {
+    store.setToken(r.token, base); log('paired with', base);
+    if (base !== store.get('baseUrl')) applySettings({ baseUrl: base, configured: true });   // never stay paired to X while the saved address is Y
+    return { ok: true };
+  }
   return r;
 });
 ipcMain.handle('settings:forget', (e, baseUrl) => { if (!fromSettings(e)) return null; try { store.clearToken(normalizeBaseUrl(baseUrl || store.get('baseUrl'))); } catch { store.clearToken(); } log('device token forgotten'); return publicSettings(); });

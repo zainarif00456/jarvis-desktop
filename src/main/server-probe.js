@@ -16,7 +16,7 @@ async function getJson(url, headers = {}) {
 async function probe(baseUrl, token) {
   let h;
   try { h = await getJson(`${baseUrl}/health`); }
-  catch (e) { return { state: 'unreachable', detail: e.name === 'AbortError' ? 'timed out' : (e.cause?.code || e.message) }; }
+  catch (e) { return { state: 'unreachable', base: baseUrl, detail: e.name === 'AbortError' ? 'timed out' : (e.cause?.code || e.message) }; }
   if (!h.json || h.json.ok !== true) {
     return { state: 'not-jarvis', detail: h.html ? 'got a web page, not Jarvis (wrong address, or an ngrok/proxy interstitial)' : `unexpected reply (HTTP ${h.status})` };
   }
@@ -45,7 +45,7 @@ async function pair(baseUrl, code, name) {
     }
     if (!token) return { ok: false, error: 'The server accepted the code but sent no device token.' };
     return { ok: true, token };
-  } catch (e) { return { ok: false, error: e.name === 'AbortError' ? 'timed out' : `could not reach the server (${e.cause?.code || e.message})` }; }
+  } catch (e) { return { ok: false, error: e.name === 'AbortError' ? 'timed out' : `could not reach the server at ${baseUrl} (${e.cause?.code || e.message})` }; }
   finally { clearTimeout(t); }
 }
 module.exports = { probe, pair };

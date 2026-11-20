@@ -3,8 +3,9 @@ const $ = (id) => document.getElementById(id);
 const say = (id, text, cls) => { const e = $(id); e.textContent = text || ''; e.className = 'out' + (cls ? ' ' + cls : ''); };
 let cfg = null;
 
+const isLoopback = (u) => /^https?:\/\/(localhost|127\.[\d.]+|\[::1\])(:|$)/i.test(u || '');
 const MSG = {
-  unreachable: (r) => `Cannot reach the server (${r.detail || 'no answer'}). Is "jarvis serve" running at that address?`,
+  unreachable: (r) => `Cannot reach the server at ${r.base} (${r.detail || 'no answer'}). Is "jarvis serve" running at that address?${isLoopback(r.base) ? ' Note: localhost is THIS computer; if Jarvis runs on another machine, enter its address (e.g. its Tailscale URL).' : ''}`,
   'not-jarvis': (r) => `Something answered, but it is not Jarvis: ${r.detail}.`,
   invalid: (r) => r.detail,
 };
@@ -14,7 +15,7 @@ function describe(r) {
 }
 async function refresh() {
   cfg = await window.jd.get();
-  $('base').value = cfg.baseUrl;
+  $('base').value = cfg.baseUrl; showUsing();
   $('hotkey').value = cfg.hotkey;
   for (const k of ['alwaysOnTop', 'closeToTray', 'startOnLogin', 'notifications', 'overlay']) $(k).checked = !!cfg[k];
   $('overlayHotkey').value = cfg.overlayHotkey || '';
@@ -47,14 +48,28 @@ async function fillAudio() {
 $('audio-laptop').onclick = () => { $('audioInput').value = 'laptop'; $('audioOutput').value = 'laptop'; say('audio-out', 'Laptop speakers and microphone selected. Press Save to apply.', 'ok'); };
 $('audio-reset').onclick = () => { $('audioInput').value = 'auto'; $('audioOutput').value = 'auto'; say('audio-out', 'Automatic selected. Press Save to apply.', 'ok'); };
 $('audio-refresh').onclick = fillAudio;
+// Which address will pairing / the app really use? Always the SAVED one, so say so, and offer to save a tested one.
+function showUsing(note) {
+  const e = $('using'); if (!e || !cfg) return;
+  const typed = $('base').value.trim(), dirty = typed && typed.replace(/\/+$/, '') !== cfg.baseUrl;
+  e.textContent = `Saved server address: ${cfg.baseUrl}${dirty ? ` (the box shows a different one, not saved yet)` : ''}` + (note ? ` ${note}` : '');
+  e.className = 'out' + (dirty || note ? ' warn' : '');
+}
 async function test() {
-  say('test-out', 'Testing…'); const r = await window.jd.test($('base').value);
-  const [m, c] = describe(r); say('test-out', m, c); return r;
+  say('test-out', 'Testing…'); $('save-url').hidden = true; const r = await window.jd.test($('base').value);
+  let [m, c] = describe(r);
+  if (r.state === 'ok' && r.base !== cfg.baseUrl) { m += ` NOT SAVED yet: the app still uses ${cfg.baseUrl}.`; c = 'warn'; $('save-url').hidden = false; $('save-url').onclick = () => saveUrl(r.base); }
+  say('test-out', m, c); showUsing(r.state !== 'ok' && isLoopback(cfg.baseUrl) ? '(localhost = this computer)' : ''); return r;
+}
+async function saveUrl(base) {
+  const r = await window.jd.save({ baseUrl: base }); if (!r.ok) return say('test-out', r.error, 'bad');
+  cfg = r.settings; $('save-url').hidden = true; say('test-out', `Saved. The app will use ${base}.`, 'ok'); await refresh();
 }
 $('test').onclick = test;
+$('base').addEventListener('input', () => showUsing());
 $('pair').onclick = async () => {
   const code = $('code').value.trim(); if (!code) return say('pair-out', 'Enter the pairing code from "jarvis pair".', 'warn');
-  say('pair-out', 'Pairing…'); const r = await window.jd.pair({ baseUrl: $('base').value, code, name: $('devname').value });
+  say('pair-out', `Pairing with ${$('base').value.trim()}…`); const r = await window.jd.pair({ baseUrl: $('base').value, code, name: $('devname').value });
   if (r.ok) { say('pair-out', 'Paired.', 'ok'); $('code').value = ''; await refresh(); } else say('pair-out', r.error, 'bad');
 };
 $('forget').onclick = async () => { await window.jd.forget($('base').value); say('pair-out', 'Device forgotten. Pair again to continue.', 'warn'); await refresh(); };

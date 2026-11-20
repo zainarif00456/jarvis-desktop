@@ -90,7 +90,7 @@ test('gateway', async (t) => {
   await t.test('502 JSON when the server is down', async () => {
     const gw2 = createGateway({ webRoot: '.', getTarget: () => 'http://127.0.0.1:1', getToken: () => null, setToken() {} }); await gw2.listen();
     const r = await get(gw2.port, '/health', { host: `127.0.0.1:${gw2.port}`, [gw2.SECRET_HEADER]: gw2.secret }); gw2.close();
-    assert.strictEqual(r.status, 502); assert.match(r.body, /unreachable/);
+    assert.strictEqual(r.status, 502); assert.match(r.body, /unreachable at http:\/\/127\.0\.0\.1:1/);
   });
 });
 
@@ -101,4 +101,11 @@ test('normalizeBaseUrl', () => {
   assert.strictEqual(normalizeBaseUrl('100.100.1.2:8000'), 'http://100.100.1.2:8000');
   assert.throws(() => normalizeBaseUrl('http://example.com'));
   assert.throws(() => normalizeBaseUrl('ftp://x'));
+});
+
+test('pair() against a dead server names the URL it tried', async () => {
+  const { pair, probe } = require('../src/main/server-probe');
+  const r = await pair('http://127.0.0.1:1', 'ABCD2345', 'x');
+  assert.strictEqual(r.ok, false); assert.match(r.error, /http:\/\/127\.0\.0\.1:1/);
+  assert.strictEqual((await probe('http://127.0.0.1:1')).base, 'http://127.0.0.1:1');
 });
