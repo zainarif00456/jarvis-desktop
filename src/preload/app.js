@@ -25,6 +25,23 @@ if (location.protocol === 'file:') {
       webFrame.executeJavaScript(src);
     }
   } catch { /* the page then uses the system default devices */ }
+  // The native browser of Development Mode (src/main/devbrowser/): the Jarvis page asks for it, the shell drives it.
+  contextBridge.exposeInMainWorld('jarvisBrowser', {
+    version: 1,
+    call: (op, args) => ipcRenderer.invoke('jarvis-browser:call', op, args),
+    setBounds: (rect) => ipcRenderer.send('jarvis-browser:bounds', rect),
+    onEvent: (fn) => { ipcRenderer.on('jarvis-browser:event', (_e, ev) => fn(ev)); },
+  });
+  // Panes in their own OS windows, and the whole window full screen (src/main/devwindows/): the Jarvis page asks, the shell does it.
+  contextBridge.exposeInMainWorld('jarvisDev', {
+    version: 1,
+    openWindow: (pane, opts) => ipcRenderer.invoke('jarvis-dev:open', pane, opts),
+    closeWindow: (pane) => ipcRenderer.invoke('jarvis-dev:close', pane),
+    windows: () => ipcRenderer.invoke('jarvis-dev:list'),
+    onWindowClosed: (fn) => { ipcRenderer.on('jarvis-dev:window-closed', (_e, pane) => fn(pane)); },
+    setFullScreen: (on) => ipcRenderer.send('jarvis-dev:fullscreen', !!on),
+    onFullScreen: (fn) => { ipcRenderer.on('jarvis-dev:fullscreen', (_e, on) => fn(!!on)); },
+  });
   // Janitor (stuck cards, stale drag frame) and per-display layout of the floating cards: src/preload/overlay-page.js, run inside the page.
   try { const src = ipcRenderer.sendSync('desktop:overlay-page'); if (src) webFrame.executeJavaScript(src); } catch { /* the page then lays itself out */ }
   ipcRenderer.on('desktop:overlay-zones', (_e, z) => {   // the displays, in window coordinates (read by the page script)

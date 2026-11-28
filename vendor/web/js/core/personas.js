@@ -6,7 +6,7 @@
 //
 // `signature` picks the core's shape while that AI is present (js/neural/shaders.js `shapeOf`):
 //   0 = layered neural sphere (Jarvis), 1 = knotted heart (Friday),
-//   2 = faceted lattice (EDITH), 3 = spiral arms (Veronica).
+//   2 = faceted lattice (EDITH), 3 = spiral arms (Veronica), 4 = rosette of petals (Karen).
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 
@@ -15,6 +15,7 @@ const TEAM = {
   friday: { name: 'Friday', role: 'Claude Code', color: '#f59e0b', color2: '#ffd27a', signature: 1, initial: 'F' },
   edith: { name: 'EDITH', role: 'Copilot', color: '#3ee0a1', color2: '#a6f7d6', signature: 2, initial: 'E' },
   veronica: { name: 'Veronica', role: 'Codex', color: '#c084fc', color2: '#e6c8ff', signature: 3, initial: 'V' },
+  karen: { name: 'Karen', role: 'Claude Code · Urdu', color: '#f472b6', color2: '#fbcfe8', signature: 4, initial: 'K' },
 };
 const YOU = { name: 'You', role: 'Owner', color: '#94a3b8', color2: '#cbd5e1', signature: 0, initial: 'Y' };
 

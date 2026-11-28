@@ -7,6 +7,8 @@ const { Store, normalizeBaseUrl } = require('./store');
 const { createGateway } = require('./gateway');
 const { probe, pair } = require('./server-probe');
 const { createOverlay } = require('./overlay');
+const { createDevBrowser } = require('./devbrowser');
+const { createPaneWindows } = require('./devwindows');
 const audio = require('./audio');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -26,7 +28,7 @@ if (process.platform === 'linux' && (process.env.XDG_SESSION_TYPE === 'wayland' 
 // Software GL for headless / VM runs (set JARVIS_DESKTOP_SWGL=1). Real GPUs are used by default.
 if (process.env.JARVIS_DESKTOP_SWGL) { app.commandLine.appendSwitch('use-gl', 'angle'); app.commandLine.appendSwitch('use-angle', 'swiftshader'); app.commandLine.appendSwitch('enable-unsafe-swiftshader'); }
 
-let store, gateway, win, appView, overlay, tray, quitting = false, hotkeyState = { registered: false, accelerator: null, error: null }, overlayHotkeyState = { registered: false, accelerator: null, error: null };
+let store, gateway, win, appView, overlay, devBrowser, paneWindows, tray, quitting = false, hotkeyState = { registered: false, accelerator: null, error: null }, overlayHotkeyState = { registered: false, accelerator: null, error: null };
 let serverStatus = { state: 'unknown' }, callMuted = { muted: false, enabled: false }, healthTimer = null, logStream = null;
 
 function log(...a) {
@@ -45,7 +47,8 @@ const SETTINGS_URL = () => require('url').pathToFileURL(path.join(UI, 'settings.
 // Navigation limits for EVERY web contents (main window and any popup): gateway origin or our own settings page only;
 // anything else is handed to the system browser (http/https) or dropped. No <webview> ever.
 app.on('web-contents-created', (_e, wc) => {
-  wc.on('will-navigate', (e, url) => {
+  // The Development Mode browser is a browser: the pages in it may navigate (isolated profile, see devbrowser/index.js).
+  if (!devBrowser?.owns(wc)) wc.on('will-navigate', (e, url) => {
     let u; try { u = new URL(url); } catch { e.preventDefault(); return; }
     if (u.origin === gateway?.url) return;
     if (u.protocol === 'file:' && url.split(/[?#]/)[0] === SETTINGS_URL()) return;
@@ -82,7 +85,8 @@ function createWindow(hidden) {
     if (!quitting && store.get('closeToTray') && tray) { e.preventDefault(); win.hide(); }
   });
   win.on('close', () => overlay?.release());   // hand the page back before the window goes
-  win.on('closed', () => { win = null; appView = null; if (!tray || quitting) overlay?.destroy(); });
+  for (const ev of ['enter-full-screen', 'leave-full-screen']) win.on(ev, () => appWc()?.send('jarvis-dev:fullscreen', win.isFullScreen()));   // Development Mode keeps its "full screen window" layout flag in step
+  win.on('closed', () => { devBrowser?.destroy(); win = null; appView = null; if (!tray || quitting) overlay?.destroy(); });
   buildMenu();
 }
 function hookWc(wc) {
@@ -338,7 +342,9 @@ app.whenReady().then(async () => {
     try { log('mic access (mac):', await systemPreferences.askForMediaAccess('microphone')); } catch (e) { log('mic prompt failed', e.message); }
   }
   const hidden = process.argv.includes('--hidden');
-  overlay = createOverlay({ getMain: () => win, getView: () => appView, enabled: () => !!store.get('overlay'), log, onFloat: (on) => escapeGrab(on && fullNow) });
+  overlay = createOverlay({ getMain: () => win, getView: () => appView, enabled: () => !!store.get('overlay'), log, onFloat: (on) => { escapeGrab(on && fullNow); devBrowser?.refresh(); } });
+  paneWindows = createPaneWindows({ getBase: () => gateway.url, getAppWc: appWc, getMain: () => win, preload: path.join(ROOT, 'src', 'preload', 'pane.js'), icon: ICON, dir: app.getPath('userData'), onGone: (w) => devBrowser?.released(w), log });
+  devBrowser = createDevBrowser({ getWindow: () => win, getAppWc: appWc, getPaneHosts: () => paneWindows.hosts(), isFloating: () => !!overlay?.floating, log });
   createWindow(hidden);
   buildTray();
   registerHotkey();
@@ -347,7 +353,7 @@ app.whenReady().then(async () => {
   if (process.env.JARVIS_DESKTOP_DEV) require('./dev-control').start({ dir: app.getPath('userData'), log, state: () => ({ floating: overlay.floating, suppressed: overlay.suppressed, rects: overlay.rects, mainVisible: !!win?.isVisible(), mainMinimized: !!win?.isMinimized(), mainFocused: !!win?.isFocused(), overlayBounds: overlay.window?.getBounds() || null, overlayVisible: !!overlay.window?.isVisible() }), main: (a) => { if (!win) return; if (a === 'minimize') win.minimize(); else if (a === 'hide') win.hide(); else if (a === 'show') showWindow(); else if (a === 'settings') { showWindow(); loadSettings(); } }, hotkey: () => overlay.toggleSuppressed(), displays: (list) => overlay.setFakeDisplays(list && list.map((d) => ({ id: d.id, primary: !!d.primary, bounds: { x: d.x, y: d.y, width: d.width, height: d.height } }))), capture: async (f) => { const img = await appWc().capturePage(); fs.writeFileSync(f, img.toPNG()); return f; }, evalIn: (code, target) => (target === 'settings' ? win?.webContents : appWc())?.executeJavaScript(code) });
   if (process.env.JARVIS_DESKTOP_AUTOQUIT_MS) setTimeout(quit, Number(process.env.JARVIS_DESKTOP_AUTOQUIT_MS));
 });
-app.on('before-quit', () => { quitting = true; });
+app.on('before-quit', () => { quitting = true; paneWindows?.closeAll(); });
 app.on('will-quit', () => { globalShortcut.unregisterAll(); clearInterval(healthTimer); gateway?.close(); });
 app.on('window-all-closed', () => { if (quitting || !tray) app.quit(); });
 app.on('activate', () => showWindow());

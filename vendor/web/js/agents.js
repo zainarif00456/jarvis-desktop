@@ -1,4 +1,4 @@
-// Who answers the call: Jarvis by default, or Friday / Veronica / EDITH in front of him.
+// Who answers the call: Jarvis by default, or Friday / Veronica / EDITH / Karen in front of him.
 //
 // One component, mounted wherever it is needed (the stage header, the console header). It shows the
 // four, marks who is in front with that AI's own colour, says why one cannot be picked (not signed
@@ -10,7 +10,7 @@ import { el } from './util.js';
 import { personaOf } from './core/personas.js';
 import { presence } from './core/presence.js';
 
-const ORDER = ['jarvis', 'friday', 'veronica', 'edith'];
+const ORDER = ['jarvis', 'friday', 'veronica', 'edith', 'karen'];
 
 export class AgentDock {
   /** @param {{send: (m: object) => boolean, toast: (t: string) => void}} io */

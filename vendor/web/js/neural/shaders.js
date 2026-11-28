@@ -8,6 +8,7 @@
 // INNER layers (a_p.w < 1) take the present AI's shape:
 //   0 Jarvis   concentric neural layers      1 Friday    a knotted heart
 //   2 EDITH    a faceted lattice (shell too) 3 Veronica  spiral arms through the core
+//   4 Karen    a rosette: five soft petals around the core
 
 const COMMON = `
 uniform vec2 u_size;        // canvas in CSS px
@@ -37,10 +38,15 @@ vec3 innerShape(float sig, vec3 base) {
     vec3 d = base / (abs(base.x) + abs(base.y) + abs(base.z) + 1e-4);
     return floor(d * 6.0 + 0.5) / 6.0 * 0.95 + (a_r.yzw - 0.5) * 0.02;
   }
-  float rad = pow(a_r.x, 0.6) * 0.92;                           // Veronica: three spiral arms
-  float ang = rad * 5.2 + floor(fract(a_r.x * 7.0) * 3.0) * 2.0944 + u_time * 0.35;
-  vec3 s = (a_r.wzy - 0.5) * (0.16 - rad * 0.08);
-  return vec3(cos(ang) * rad, (a_r.z - 0.5) * 0.08, sin(ang) * rad) + s;
+  if (sig < 3.5) {                                              // Veronica: three spiral arms
+    float rad = pow(a_r.x, 0.6) * 0.92;
+    float ang = rad * 5.2 + floor(fract(a_r.x * 7.0) * 3.0) * 2.0944 + u_time * 0.35;
+    vec3 s = (a_r.wzy - 0.5) * (0.16 - rad * 0.08);
+    return vec3(cos(ang) * rad, (a_r.z - 0.5) * 0.08, sin(ang) * rad) + s;
+  }
+  float phi = atan(base.z, base.x) + u_time * 0.12;             // Karen: a rosette of five petals
+  float petal = 0.55 + 0.45 * pow(abs(cos(2.5 * phi)), 0.8);
+  return vec3(base.x * petal, base.y * 0.6, base.z * petal) + (a_r.yzw - 0.5) * 0.03;
 }
 
 vec3 shapeOf(float sig) {

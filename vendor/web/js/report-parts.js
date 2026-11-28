@@ -261,7 +261,7 @@ const KEYWORDS = new Set(('def class return if elif else for while in not and or
   'chan select map range var struct self Self').split(' '));
 const TOKEN = /(#.*$|\/\/.*$|\/\*.*?\*\/|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\b\d[\d_.]*\b|\b[A-Za-z_][A-Za-z0-9_]*\b(?=\s*\()|\b[A-Za-z_][A-Za-z0-9_]*\b|@[A-Za-z_][\w.]*)/g;
 
-function colour(line, language) {
+export function colour(line, language) {
   const out = []; let last = 0;
   const hashComment = ['python', 'shell', 'ruby', 'yaml', 'toml'].includes(language);
   for (const m of line.matchAll(TOKEN)) {

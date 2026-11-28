@@ -26,7 +26,7 @@ jobs:
   mac:
     # Universal (Intel + Apple Silicon) ad-hoc signed dmg + zip. Not notarized: first open = right-click > Open.
     needs: test
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

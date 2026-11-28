@@ -79,7 +79,7 @@ export function renderTeam(root, state, act) {
       !m.available ? el('div', { class: 's', style: 'color:var(--warn)', text: m.detail }) : null,
       el('div', { class: 'btns' }, el('button', { class: 'mini', type: 'button', text: `Ask ${m.name}…`, onclick: () => act.prefill(`${m.name}, `) }))));
   }
-  root.append(el('div', { class: 'empty', text: 'Say “give this to Friday”, “ask Veronica to review it”, or use /friday, /edith, /veronica.' }));
+  root.append(el('div', { class: 'empty', text: 'Say “give this to Friday”, “ask Veronica to review it”, or use /friday, /edith, /veronica, /karen.' }));
 }
 
 const when = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'the beginning');

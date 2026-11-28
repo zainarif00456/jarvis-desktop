@@ -5,7 +5,7 @@ const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Typ
 const STATE = {
   ready: ['ready', 'ok'], warming: ['starting…', 'warn'], failed: ['failed', 'bad'], idle: ['asleep, wakes on the next turn', 'muted'], off: ['', 'muted'],
 };
-const FIXED = [['friday', 'Friday', 'Claude Code'], ['veronica', 'Veronica', 'Codex'], ['edith', 'EDITH', 'Copilot']];
+const FIXED = [['friday', 'Friday', 'Claude Code'], ['veronica', 'Veronica', 'Codex'], ['edith', 'EDITH', 'Copilot'], ['karen', 'Karen', 'Claude Code (Urdu)']];
 
 export class BrainSettings {
   constructor({ brainBox, skillBox, toast }) {

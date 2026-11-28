@@ -129,7 +129,7 @@ export class ScheduleBoard {
     const desc = el('textarea', { rows: '4', maxlength: '2000', placeholder: 'What should happen? For a task, write it as an instruction.', 'aria-label': 'Description' }); desc.value = item?.description || '';
     const select = (opts, value, label) => { const s = el('select', { 'aria-label': label }, ...opts.map(([v, text]) => el('option', { value: v, text, selected: v === value }))); return s; };
     const mode = select([['remind', 'Remind me'], ['do', 'Do it yourself (Jarvis, with tools)'], ['agent', 'Give it to an agent']], item?.mode || 'remind', 'What happens');
-    const agent = select([['friday', 'Friday'], ['veronica', 'Veronica'], ['edith', 'EDITH']], item?.agent || 'friday', 'Agent');
+    const agent = select([['friday', 'Friday'], ['veronica', 'Veronica'], ['edith', 'EDITH'], ['karen', 'Karen']], item?.agent || 'friday', 'Agent');
     const priority = select(Object.entries(PRIORITY).map(([k, v]) => [k, v]), item?.priority || 'normal', 'Priority');
     const report = select([['always', 'Always tell me'], ['on_change', 'Only when it changes'], ['on_problem', 'Only if something is wrong']], item?.report || 'always', 'When to report');
     const kind = select([['once', 'Once, at a time'], ['in', 'Once, after a delay'], ['every', 'Repeat every…'], ['cron', 'Repeat on a rule']], t.kind, 'Timing');

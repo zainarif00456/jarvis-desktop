@@ -2,13 +2,13 @@
  "note": "sha256 of every vendor/web file the desktop patch layer (patches/apply.js) changes or adds",
  "files": {
   "css/cards.css": "cfa6686398970137b90eb3272e48a1102057d2207469540941f3fc73e8c9be43",
-  "index.html": "789aa88432eb256076c2755faec8e410cc8844bddfdd31b3fd7a82cb3407ab35",
+  "index.html": "83b0375956c420a9a7ccdd073d852396a36f48b1db18a9c93061f297bc475c5a",
   "js/cameras.js": "059acfcd46c49d924cc586c48fff5c22ebafece9cda13edebd81e74a09a222ba",
   "js/cards.js": "226dc16b37b92780288803137eba985ec71f5a9ad6b05ab9a589568414f0a148",
   "js/deck.js": "50a373a53a746e21d7de05ebb4199863ef3e9e0f4b6b0ca1b5f41345e3e6dfeb",
   "js/holowin.js": "9000a645950486c5c0a3433aed58658944dd2c26b31565e940d652f55e13dc80",
   "js/screen.js": "acd52e912ced68822ce1e20f88ae8ab7a3c404870ba542522e68f120db73ab21",
-  "js/viewer.js": "1162eaba7468970c8d6a2230329d1a1f91027f68309c88278d516dcdd39b0e50",
+  "js/viewer.js": "9676bb1c7bb8eb481975ea2fd039e8a1f63646cef3c26a48042256a4c5485d20",
   "js/workspace/workspace.js": "56f2f056578fb16e8b20cc770c2a59f20dd5338edf4132094be53cca80c15c85"
  }
 }

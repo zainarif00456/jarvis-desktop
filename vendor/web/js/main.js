@@ -20,6 +20,8 @@ import { AgentDock } from './agents.js';
 import { BrainSettings } from './brains.js';
 import { ExecLayer } from './exec/layer.js';
 import { Terminals } from './terminal.js';
+// Development Mode (js/dev/): loaded on its first message, so it can never break the normal page
+let dev = null; let devLoading = null;
 
 const $ = (id) => document.getElementById(id);
 const state = { tasks: new Map(), approvals: new Map(), files: [], team: [], status: {}, busy: false, attachments: [], unseenFiles: 0, panel: 'activity', schedules: { items: [], scheduler: {}, waiting: [] }, sessions: { sessions: null, matches: null, query: '' } };
@@ -36,7 +38,7 @@ let held = false; let holdTimer = 0; let releaseCallLock = null;
 const COMMANDS = [
   ['/help', 'list commands'], ['/tasks', 'what is running'], ['/stop', 'emergency stop'], ['/cancel', 'cancel a task <id>'],
   ['/approve', 'approve the latest request'], ['/deny', 'deny the latest request'], ['/friday', '<project> :: <job>  (Claude Code)'],
-  ['/edith', '<project> :: <job>  (Copilot)'], ['/veronica', '<project> :: <job>  (Codex)'], ['/team', 'who is free'], ['/agent', 'who answers: /agent friday | veronica | edith | jarvis'],
+  ['/edith', '<project> :: <job>  (Copilot)'], ['/veronica', '<project> :: <job>  (Codex)'], ['/karen', '<project> :: <job>  (Claude Code, Urdu)'], ['/team', 'who is free'], ['/agent', 'who answers: /agent friday | veronica | edith | karen | jarvis'],
   ['/files', 'shared files'], ['/status', 'spend and uptime'], ['/run', 'run a shell command'], ['/tool', 'call a tool with JSON'], ['/new', 'start a fresh session'], ['/clear', 'clear this screen'],
 ];
 
@@ -125,6 +127,16 @@ function applyFps() {
   orb?.setMaxFps(video ? Math.min(tierFps, 30) : tierFps);
 }
 
+function devUi(m) {
+  if (!dev && !devLoading && m.type === 'dev_state' && !m.dev?.active) return undefined;   // never on: nothing to load
+  devLoading = devLoading || import('./dev/mode.js').then((mod) => {
+    dev = new mod.DevUI({ send, toast, terminals });
+    window.__jarvis.dev = () => dev;
+    return dev;
+  }).catch((err) => { devLoading = null; toast(`The Development Mode view could not load: ${err.message}`); return null; });
+  return devLoading.then((ui) => ui?.handle(m));
+}
+
 function send(payload) {
   if (!conn || !conn.send(payload)) { toast('Not connected — retrying…'); return false; }
   return true;
@@ -174,9 +186,11 @@ function onMessage(m) {
     case 'exec_start': return exec?.start(m);
     case 'exec_end': return exec?.end(m);
     case 'exec_action_result': return exec?.actionResult(m);
-    case 'terminal_opened': return terminals?.open(m.terminal, ['friday', 'veronica', 'edith'].includes(m.terminal.by) ? m.terminal.by : null);
+    case 'terminal_opened': return terminals?.open(m.terminal, ['friday', 'veronica', 'edith', 'karen'].includes(m.terminal.by) ? m.terminal.by : null);
     case 'terminal_focus': return terminals?.focus(m.id);
     case 'terminal_closed': return terminals?.gone(m.id);
+    case 'dev_state': case 'dev_pane': case 'dev_layout': case 'dev_focus': case 'dev_refresh': case 'dev_event': case 'dev_diff': case 'dev_explain':
+    case 'dev_explain_step': case 'qa_update': case 'browser_frame': case 'browser_cmd': return devUi(m);
     case 'team_update': state.team = m.team; return renderTeam($('panel-team'), state, act);
     case 'file_added': return onFile(m.file);
     case 'file_removed': return onFilesRemoved(m.ids);
@@ -200,6 +214,8 @@ function onWelcome(m) {
   agents.set(m.agents);
   brains?.setAgents(m.agents); if (m.brain) brains?.set(m.brain);
   terminals?.sync(m.terminals);
+  if (window.jarvisBrowser) send({ type: 'browser_caps', native: true, snapshot_version: window.jarvisBrowser.version || 1 });   // the desktop app can drive a native browser
+  if (m.dev?.active) devUi({ type: 'dev_state', dev: m.dev });
   deck.welcome(m);
   setStatus(m.status);
   timeline.setHistory(m.history);
@@ -496,9 +512,11 @@ const voiceLabel = (v) => `${v.name} · ${v.accent} ${v.gender === 'masculine' ?
 // Each agent reads her own report in her own voice: pick the voice and pace, hear it before keeping it.
 function renderAgentVoices(data) {
   const box = $('s-agents'); if (!box || !data.agents) return;
-  const voices = [...data.voices].sort((a, b) => (b.gender === 'feminine') - (a.gender === 'feminine') || a.name.localeCompare(b.name));
+  const english = [...data.voices].sort((a, b) => (b.gender === 'feminine') - (a.gender === 'feminine') || a.name.localeCompare(b.name));
   box.replaceChildren(...Object.entries(data.agents).map(([key, a]) => {
-    const select = el('select', { 'aria-label': `${a.name}'s voice` }, voices.map((v) => el('option', { value: v.id, text: voiceLabel(v), selected: v.id === a.voice })));
+    // an Urdu agent (Karen) has voices of her own: the server lists them with the agent
+    const own = a.voices ? a.voices.map((v) => el('option', { value: v.id, text: v.name, selected: v.id === a.voice })) : null;
+    const select = el('select', { 'aria-label': `${a.name}'s voice` }, own || english.map((v) => el('option', { value: v.id, text: voiceLabel(v), selected: v.id === a.voice })));
     const speed = el('input', { type: 'range', min: '0.8', max: '1.4', step: '0.05', value: String(a.speed || data.speed), 'aria-label': `${a.name}'s speed` });
     const out = el('output', { text: `${Number(a.speed || data.speed).toFixed(2)}×` });
     const hear = el('button', { type: 'button', class: 'pill', text: 'Hear it' });

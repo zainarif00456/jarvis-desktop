@@ -85,7 +85,7 @@ class FileCard {
 
   renderFoot() {
     const f = this.file; const who = persona(f.owner); const kind = this.kind; const v = this.viewer;
-    const meta = el('div', { class: 'fv-meta' }, el('b', { text: f.name }), el('span', { text: `${f.description && !['friday', 'edith', 'veronica'].includes(f.owner) ? f.description : who.name} · ${fmtBytes(f.size)} · ${ago(f.created_at)}` }));
+    const meta = el('div', { class: 'fv-meta' }, el('b', { text: f.name }), el('span', { text: `${f.description && !['friday', 'edith', 'veronica', 'karen'].includes(f.owner) ? f.description : who.name} · ${fmtBytes(f.size)} · ${ago(f.created_at)}` }));
     const buttons = [
       el('a', { class: 'fv-b', href: url(f), download: f.name }, 'Save'),
       kind === 'text' ? el('button', { type: 'button', class: 'fv-b', text: 'Copy', onclick: async () => { const r = await fetch(`/api/files/${f.id}/preview`); const ok = r.ok && (await copyText((await r.json()).text)); v.actions.toast(ok ? `Copied ${f.name}` : 'Could not copy'); } }) : null,

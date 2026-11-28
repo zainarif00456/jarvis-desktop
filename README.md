@@ -1,6 +1,6 @@
 # Jarvis Desktop
 
-A desktop client for your Jarvis server. It is the **real Jarvis web UI** (orb, agents, deck, reports, debriefs, cameras, terminals) vendored line for line into Electron, behind a small loopback gateway that handles pairing and the device token. The server is untouched and unchanged: this app is only a client. See `docs/ADAPTATIONS.md`, `docs/AUDIO.md`, `docs/OVERLAY.md`, and `docs/MAC.md`.
+A desktop client for your Jarvis server. It is the **real Jarvis web UI** (orb, agents, deck, reports, debriefs, cameras, terminals) vendored line for line into Electron, behind a small loopback gateway that handles pairing and the device token. The server is untouched and unchanged: this app is only a client. See `docs/ADAPTATIONS.md`, `docs/AUDIO.md`, `docs/OVERLAY.md`, `docs/DEVMODE.md`, and `docs/MAC.md`.
 
 ## Install
 **Linux (x64)**

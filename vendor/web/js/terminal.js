@@ -33,6 +33,25 @@ function loadXterm() {
   return loading;
 }
 
+/** The part of a HoloWindow a terminal uses, for a terminal that lives in a pane (Development Mode). */
+class DockedWindow {
+  constructor(host, { tags, onClose }) {
+    this.host = host; this.onCloseCb = onClose; this.closed = false; this.minimised = false;
+    this.body = el('div', { class: 'tm-dock' });
+    host.replaceChildren(el('div', { class: 'tm-dockbar' }, ...tags), this.body);
+  }
+
+  setTitle(text) { this.host.dataset.title = text; }
+  restore() {}
+  focus() {}
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    this.host.replaceChildren(el('p', { class: 'dv-empty', text: 'Terminal closed' }));
+    this.onCloseCb?.();
+  }
+}
+
 const enc = new TextEncoder();
 const KEYS = [
   ['Esc', '\x1b'], ['Tab', '\t'], ['Ctrl', null], ['↑', '\x1b[A'], ['↓', '\x1b[B'], ['←', '\x1b[D'], ['→', '\x1b[C'],
@@ -40,14 +59,14 @@ const KEYS = [
 ];
 
 class TerminalView {
-  constructor(info, { toast, onClosed, persona }) {
+  constructor(info, { toast, onClosed, persona, dock = null }) {
     this.id = info.id; this.info = info; this.toast = toast; this.onClosed = onClosed;
     this.ctrl = false; this.closed = false; this.retry = 0; this.fontSize = isCompact() ? 12 : 13;
     this.screen = el('div', { class: 'tm-screen' });
     this.state = el('span', { class: 'tm-state', text: 'connecting…' });
     this.body = el('div', { class: 'tm' }, this.screen);
     if (isCompact()) this.body.append(this.phoneControls());
-    this.win = new HoloWindow({
+    this.win = dock ? new DockedWindow(dock, { tags: [this.state], onClose: () => this.close() }) : new HoloWindow({
       id: `term-${info.id}`, kind: 'terminal', title: `Terminal · ${info.title || info.cwd}`,
       width: Math.min(820, innerWidth - 120), height: Math.min(500, innerHeight - 200), minW: 380, minH: 220,
       tags: [this.state], item: { type: 'terminal', id: info.id, name: info.title || info.cwd },
@@ -173,13 +192,19 @@ export class Terminals {
   constructor({ send, toast }) {
     this.send = send; this.toast = toast;
     this.views = new Map();
+    this.dock = null;
   }
+
+  /** The next terminal that opens goes into this element (a pane) instead of a floating window. */
+  dockNext(host, onDocked) { this.dock = { host, onDocked }; }
 
   open(info, persona = null) {
     const have = this.views.get(info.id);
     if (have) { have.focus(); return have; }
-    const view = new TerminalView(info, { toast: this.toast, persona, onClosed: (id, byOwner) => this.closed(id, byOwner) });
+    const dock = this.dock; this.dock = null;
+    const view = new TerminalView(info, { toast: this.toast, persona, dock: dock?.host || null, onClosed: (id, byOwner) => this.closed(id, byOwner) });
     this.views.set(info.id, view);
+    dock?.onDocked?.(view);
     return view;
   }
 

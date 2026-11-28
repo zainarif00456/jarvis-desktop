@@ -33,7 +33,7 @@ html[data-fx="lite"] .ad-chip.pending .ad-dot { animation: none; opacity: .5; }
 }
 
 /* the message box and the call button name whoever is answering */
-body[data-holder="friday"] #call, body[data-holder="veronica"] #call, body[data-holder="edith"] #call { border-color: var(--ai-line); }
+body[data-holder="friday"] #call, body[data-holder="veronica"] #call, body[data-holder="edith"] #call, body[data-holder="karen"] #call { border-color: var(--ai-line); }
 
 /* ---- settings: brains and the skill hub ---------------------------------------------------- */
 .brain-status { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
